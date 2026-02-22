@@ -1,0 +1,8 @@
+{
+  "name": "arclink",
+  "private": true,
+  "workspaces": [
+    "services/*",
+    "shared/*"
+  ]
+}
