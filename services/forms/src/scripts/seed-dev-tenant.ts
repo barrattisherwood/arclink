@@ -24,7 +24,7 @@ async function seed(): Promise<void> {
     id: randomUUID(),
     api_key: hashedKey,
     name: 'Machinum Agency Site (dev)',
-    allowed_origin: 'http://localhost:3000',
+    allowed_origin: 'http://localhost:4200',
     recipient_email: 'b4rr4tt@gmail.com',
     reply_to_field: 'email',
     rate_limit: 100,

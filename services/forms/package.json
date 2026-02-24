@@ -3,20 +3,28 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
+    "test": "jest",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "seed:tenant": "ts-node-dev --transpile-only src/scripts/seed-tenant.ts",
+    "seed:dev-tenant": "ts-node-dev --transpile-only src/scripts/seed-dev-tenant.ts",
+    "seed:findtherapy-tenants": "ts-node-dev --transpile-only src/scripts/seed-findtherapy-tenants.ts",
+    "update:brand-colors": "ts-node-dev --transpile-only src/scripts/update-brand-colors.ts"
   },
   "dependencies": {
+    "dotenv": "^16.3.1",
     "express": "^4.18.2",
-    "mongoose": "^8.0.3",
-    "resend": "^3.1.0",
     "express-rate-limit": "^7.1.5",
-    "dotenv": "^16.3.1"
+    "mongoose": "^8.0.3",
+    "resend": "^3.1.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",
+    "@types/jest": "^30.0.0",
     "@types/node": "^20.11.0",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.3.3"
   }
