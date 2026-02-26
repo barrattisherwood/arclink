@@ -1,0 +1,34 @@
+name: Deploy arclink-forms
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'services/forms/**'
+
+jobs:
+  test-and-deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/forms
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: services/forms/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests
+        run: npm test
+
+      - name: Deploy to Railway
+        run: npx --yes @railway/cli@latest up --service forms
+        env:
+          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
