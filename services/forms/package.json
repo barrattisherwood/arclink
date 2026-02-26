@@ -10,7 +10,8 @@
     "seed:tenant": "ts-node-dev --transpile-only src/scripts/seed-tenant.ts",
     "seed:dev-tenant": "ts-node-dev --transpile-only src/scripts/seed-dev-tenant.ts",
     "seed:findtherapy-tenants": "ts-node-dev --transpile-only src/scripts/seed-findtherapy-tenants.ts",
-    "update:brand-colors": "ts-node-dev --transpile-only src/scripts/update-brand-colors.ts"
+    "update:brand-colors": "ts-node-dev --transpile-only src/scripts/update-brand-colors.ts",
+    "enable:confirmation": "ts-node-dev --transpile-only src/scripts/enable-confirmation.ts"
   },
   "dependencies": {
     "dotenv": "^16.3.1",

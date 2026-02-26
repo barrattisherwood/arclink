@@ -9,6 +9,8 @@ export interface ITenant extends Document {
   recipient_field?: string;
   reply_to_field: string;
   brand_color?: string;
+  confirmation_enabled?: boolean;
+  confirmation_subject?: string;
   rate_limit: number;
   active: boolean;
   created_at: Date;
@@ -23,6 +25,8 @@ const TenantSchema = new Schema<ITenant>({
   recipient_field: { type: String, required: false },
   reply_to_field: { type: String, required: true },
   brand_color: { type: String, required: false },
+  confirmation_enabled: { type: Boolean, required: false, default: false },
+  confirmation_subject: { type: String, required: false },
   rate_limit: { type: Number, required: true, default: 10 },
   active: { type: Boolean, required: true, default: true },
   created_at: { type: Date, required: true, default: Date.now },

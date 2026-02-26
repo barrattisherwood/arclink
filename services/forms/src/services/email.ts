@@ -97,6 +97,57 @@ function buildEmailText(fields: Record<string, unknown>): string {
     .join('\n');
 }
 
+function buildConfirmationHtml(tenant: ITenant): string {
+  const brandColor = tenant.brand_color ?? DEFAULT_BRAND_COLOR;
+  const tenantName = escapeHtml(tenant.name);
+  const year = new Date().getFullYear();
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body style="margin:0;padding:0;background:#f2f2f2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f2f2f2;padding:40px 20px;">
+    <tr>
+      <td align="center">
+        <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:6px;overflow:hidden;box-shadow:0 1px 4px rgba(0,0,0,0.10);">
+
+          <!-- Brand accent bar -->
+          <tr>
+            <td height="5" style="background:${brandColor};font-size:0;line-height:0;">&nbsp;</td>
+          </tr>
+
+          <!-- Body -->
+          <tr>
+            <td style="padding:40px 40px 32px;">
+              <h1 style="color:#111111;font-size:22px;font-weight:700;margin:0 0 16px;letter-spacing:-0.01em;">${tenantName}</h1>
+              <p style="color:#444444;font-size:15px;line-height:1.7;margin:0 0 12px;">Thanks for getting in touch. We&rsquo;ve received your message and will get back to you soon.</p>
+            </td>
+          </tr>
+
+          <!-- Footer -->
+          <tr>
+            <td style="background:#f9f9f9;padding:16px 40px;border-top:1px solid #eeeeee;">
+              <p style="color:#bbbbbb;font-size:11px;margin:0;text-align:center;">
+                Sent via <a href="https://arclink.dev" style="color:#999999;text-decoration:none;">arclink</a> &mdash; &copy; ${year}
+              </p>
+            </td>
+          </tr>
+
+        </table>
+      </td>
+    </tr>
+  </table>
+</body>
+</html>`;
+}
+
+function buildConfirmationText(tenant: ITenant): string {
+  return `${tenant.name}\n\nThanks for getting in touch. We've received your message and will get back to you soon.`;
+}
+
 export async function sendFormEmail(tenant: ITenant, body: Record<string, unknown>): Promise<void> {
   const replyTo = body[tenant.reply_to_field];
   const replyToEmail = typeof replyTo === 'string' ? replyTo : undefined;
@@ -118,5 +169,20 @@ export async function sendFormEmail(tenant: ITenant, body: Record<string, unknow
 
   if (error) {
     throw new Error(`Resend error: ${error.message}`);
+  }
+
+  if (tenant.confirmation_enabled && replyToEmail) {
+    const confirmSubject = tenant.confirmation_subject ?? `Thanks for your message — ${tenant.name}`;
+    const { error: confirmError } = await resend.emails.send({
+      from: 'forms@arclink.dev',
+      to: replyToEmail,
+      subject: confirmSubject,
+      html: buildConfirmationHtml(tenant),
+      text: buildConfirmationText(tenant),
+    });
+
+    if (confirmError) {
+      throw new Error(`Resend confirmation error: ${confirmError.message}`);
+    }
   }
 }
