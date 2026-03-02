@@ -76,6 +76,51 @@ ${tagInstruction}`;
   };
 }
 
+export interface TitleSuggestion {
+  title: string;
+  rationale: string;
+}
+
+export async function suggestTitles(
+  tenant: IBlogTenant,
+  count: number,
+  existingTitles: string[],
+): Promise<TitleSuggestion[]> {
+  const prompt = `You are an SEO content strategist. Suggest ${count} blog post titles for a blog with this profile:
+
+Blog subject: ${tenant.blog_subject}
+Target audience: ${tenant.blog_audience}
+Tone: ${tenant.blog_tone}
+
+${existingTitles.length > 0 ? `Already published or queued (do not repeat or closely overlap):\n${existingTitles.map(t => `- ${t}`).join('\n')}\n` : ''}
+
+Requirements:
+- Each title should target a realistic search query the audience would use
+- Mix pillar topics (broad) with cluster topics (specific, long-tail)
+- Titles should feel genuinely useful, not clickbait
+- Match the tone of the blog
+
+Return a JSON block (fenced with \`\`\`json) with this exact structure:
+{
+  "suggestions": [
+    { "title": "...", "rationale": "one sentence on why this works for the audience and SEO" }
+  ]
+}`;
+
+  const message = await client.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 1024,
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const raw = message.content[0].type === 'text' ? message.content[0].text : '';
+  const jsonMatch = raw.match(/```json\s*([\s\S]*?)```/);
+  if (!jsonMatch) throw new Error('Claude did not return expected JSON block');
+
+  const parsed = JSON.parse(jsonMatch[1]) as { suggestions: TitleSuggestion[] };
+  return parsed.suggestions;
+}
+
 export async function prioritiseQueue(
   tenant: IBlogTenant,
   titles: Array<{ id: string; title: string; notes: string | null }>,

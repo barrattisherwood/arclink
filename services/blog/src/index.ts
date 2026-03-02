@@ -5,6 +5,7 @@ import postsRouter from './routes/posts';
 import queueRouter from './routes/queue';
 import generateRouter from './routes/generate';
 import prioritiseRouter from './routes/prioritise';
+import suggestRouter from './routes/suggest';
 import feedRouter from './routes/feed';
 import { startScheduler } from './scheduler';
 
@@ -18,6 +19,7 @@ app.use('/posts/:tenantId', postsRouter);
 app.use('/queue/:tenantId', queueRouter);
 app.use('/generate/:tenantId', generateRouter);
 app.use('/prioritise/:tenantId', prioritiseRouter);
+app.use('/suggest/:tenantId', suggestRouter);
 
 async function start(): Promise<void> {
   const mongoUri = process.env.MONGODB_URI;
