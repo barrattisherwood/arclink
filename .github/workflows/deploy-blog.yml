@@ -9,9 +9,6 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: services/blog
 
     steps:
       - uses: actions/checkout@v4
@@ -21,6 +18,7 @@ jobs:
           node-version: '20'
 
       - name: Install dependencies
+        working-directory: services/blog
         run: npm install
 
       - name: Deploy to Railway
