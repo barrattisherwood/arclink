@@ -1,0 +1,77 @@
+@use '@angular/material' as mat;
+
+@include mat.core();
+
+$primary: mat.define-palette(mat.$deep-purple-palette, 400);
+$accent: mat.define-palette(mat.$purple-palette, A200);
+$theme: mat.define-dark-theme((
+  color: (primary: $primary, accent: $accent),
+  typography: mat.define-typography-config($font-family: 'Inter, sans-serif'),
+  density: 0,
+));
+
+html {
+  @include mat.all-component-themes($theme);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', sans-serif;
+  background: #0a0a0a;
+  color: #f0f0f0;
+  min-height: 100vh;
+}
+
+.page {
+  padding: 32px;
+  max-width: 960px;
+  margin: 0 auto;
+}
+
+.page-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 32px;
+
+  h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+  }
+}
+
+.card {
+  background: #111;
+  border: 1px solid #222;
+  border-radius: 8px;
+  padding: 24px;
+  margin-bottom: 16px;
+}
+
+.tag {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: #222;
+  color: #aaa;
+  margin-right: 4px;
+
+  &.draft { background: #1a1a2e; color: #7c7cff; }
+  &.scheduled { background: #1a2e1a; color: #7cff7c; }
+  &.published { background: #2e1a1a; color: #ff9f7c; }
+}
+
+.empty-state {
+  text-align: center;
+  padding: 64px 32px;
+  color: #555;
+
+  p { margin: 8px 0 0; font-size: 0.9rem; }
+}
