@@ -12,6 +12,23 @@ import { startScheduler } from './scheduler';
 const app = express();
 const PORT = process.env.PORT ?? 3002;
 
+const ALLOWED_ORIGINS = [
+  'https://dashboard.arclink.dev',
+  'http://localhost:4200',
+  'http://localhost:3000',
+];
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,x-api-key');
+  if (req.method === 'OPTIONS') { res.sendStatus(204); return; }
+  next();
+});
+
 app.use(express.json());
 
 app.use('/posts/:tenantId/feed.xml', feedRouter);
