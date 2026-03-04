@@ -28,6 +28,7 @@ export interface Post {
   scheduled_for: string | null;
   published_at: string | null;
   created_at: string;
+  content?: string;
   featured_image: {
     url: string;
     alt: string;
@@ -120,6 +121,13 @@ export class BlogApiService {
     return this.http.patch<{ post: Post }>(
       `${this.base}/posts/${this.tenantId}/${postId}`,
       { status: 'scheduled' },
+      { headers: this.headers },
+    );
+  }
+
+  getPost(postId: string): Observable<{ post: Post }> {
+    return this.http.get<{ post: Post }>(
+      `${this.base}/posts/${this.tenantId}/preview/${postId}`,
       { headers: this.headers },
     );
   }

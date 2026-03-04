@@ -1,5 +1,6 @@
 import { Component, signal, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
@@ -13,6 +14,7 @@ import { BlogApiService, Post } from '../../core/blog-api.service';
   imports: [
     CommonModule,
     DatePipe,
+    RouterModule,
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
@@ -60,6 +62,15 @@ import { BlogApiService, Post } from '../../core/blog-api.service';
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+    }
+
+    .post-title a {
+      color: inherit;
+      text-decoration: none;
+    }
+
+    .post-title a:hover {
+      text-decoration: underline;
     }
 
     .post-excerpt {
@@ -120,7 +131,7 @@ import { BlogApiService, Post } from '../../core/blog-api.service';
             }
 
             <div class="post-body">
-              <div class="post-title">{{ post.title }}</div>
+              <div class="post-title"><a [routerLink]="['/blog/drafts', post.id]">{{ post.title }}</a></div>
               <div class="post-excerpt">{{ post.excerpt }}</div>
               <div class="post-meta">
                 <span>{{ post.word_count | number }} words</span>

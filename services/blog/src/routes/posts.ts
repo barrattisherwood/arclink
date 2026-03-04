@@ -62,6 +62,19 @@ router.get('/drafts', requireAuth, async (req: Request, res: Response): Promise<
   res.json({ posts });
 });
 
+// GET /posts/:tenantId/preview/:postId — single post preview (protected, any status)
+router.get('/preview/:postId', requireAuth, async (req: Request, res: Response): Promise<void> => {
+  const { tenantId, postId } = req.params;
+  const post = await Post.findOne({ id: postId, tenant_id: tenantId });
+
+  if (!post) {
+    res.status(404).json({ error: 'Post not found' });
+    return;
+  }
+
+  res.json({ post });
+});
+
 // GET /posts/:tenantId/:slug — single published post (public)
 router.get('/:slug', resolveTenant, async (req: Request, res: Response): Promise<void> => {
   const { tenantId, slug } = req.params;
