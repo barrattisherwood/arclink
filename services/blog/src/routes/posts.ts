@@ -87,7 +87,7 @@ router.post('/:postId/regenerate-image', requireAuth, async (req: Request, res: 
     return;
   }
 
-  const searchKeyword = keyword || post.title;
+  const searchKeyword = keyword || post.tags?.[0] || post.title.split(' ').slice(0, 4).join(' ');
   const image = await fetchUnsplashImage(searchKeyword, post.title);
 
   if (!image) {
