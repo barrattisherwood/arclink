@@ -107,6 +107,32 @@ router.post('/:postId/regenerate-image', requireAuth, async (req: Request, res: 
   res.json({ post });
 });
 
+// POST /posts/:tenantId/:postId/upload-image — upload a custom image (protected)
+router.post('/:postId/upload-image', requireAuth, async (req: Request, res: Response): Promise<void> => {
+  const { tenantId, postId } = req.params;
+  const { image, alt } = req.body as { image: string; alt?: string };
+
+  if (!image) {
+    res.status(400).json({ error: 'image (base64 data URL) is required' });
+    return;
+  }
+
+  const post = await Post.findOne({ id: postId, tenant_id: tenantId });
+  if (!post) {
+    res.status(404).json({ error: 'Post not found' });
+    return;
+  }
+
+  post.featured_image = {
+    url: image,
+    alt: alt || post.title,
+    credit: null,
+  };
+  await post.save();
+
+  res.json({ post });
+});
+
 // GET /posts/:tenantId/:slug — single published post (public)
 router.get('/:slug', resolveTenant, async (req: Request, res: Response): Promise<void> => {
   const { tenantId, slug } = req.params;

@@ -3,11 +3,11 @@ import { Schema, model, Document } from 'mongoose';
 export interface IFeaturedImage {
   url: string;
   alt: string;
-  credit: {
+  credit?: {
     photographer: string;
     photographer_url: string;
     unsplash_url: string;
-  };
+  } | null;
 }
 
 export interface IPost extends Document {
@@ -43,9 +43,12 @@ const PostSchema = new Schema<IPost>({
       url: { type: String, required: true },
       alt: { type: String, required: true },
       credit: {
-        photographer: { type: String, required: true },
-        photographer_url: { type: String, required: true },
-        unsplash_url: { type: String, required: true },
+        type: new Schema({
+          photographer: { type: String },
+          photographer_url: { type: String },
+          unsplash_url: { type: String },
+        }),
+        default: null,
       },
     }),
     default: null,

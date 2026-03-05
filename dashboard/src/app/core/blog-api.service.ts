@@ -32,7 +32,7 @@ export interface Post {
   featured_image: {
     url: string;
     alt: string;
-    credit: { photographer: string; photographer_url: string; unsplash_url: string };
+    credit?: { photographer: string; photographer_url: string; unsplash_url: string } | null;
   } | null;
 }
 
@@ -128,6 +128,14 @@ export class BlogApiService {
   getPost(postId: string): Observable<{ post: Post }> {
     return this.http.get<{ post: Post }>(
       `${this.base}/posts/${this.tenantId}/preview/${postId}`,
+      { headers: this.headers },
+    );
+  }
+
+  uploadImage(postId: string, image: string, alt?: string): Observable<{ post: Post }> {
+    return this.http.post<{ post: Post }>(
+      `${this.base}/posts/${this.tenantId}/${postId}/upload-image`,
+      { image, alt },
       { headers: this.headers },
     );
   }

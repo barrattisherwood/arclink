@@ -132,6 +132,13 @@ import { BlogApiService, Post } from '../../core/blog-api.service';
                 <mat-icon>autorenew</mat-icon>
                 {{ regenerating() ? 'Generating...' : 'New Image' }}
               </button>
+              <button mat-flat-button [disabled]="uploading()"
+                (click)="fileInput.click()" style="background:#1a1a1a;margin-left:8px">
+                <mat-icon>upload</mat-icon>
+                {{ uploading() ? 'Uploading...' : 'Upload' }}
+              </button>
+              <input #fileInput type="file" accept="image/*" hidden
+                (change)="onFileSelected($event)" />
             </div>
           </div>
         } @else {
@@ -141,6 +148,13 @@ import { BlogApiService, Post } from '../../core/blog-api.service';
               <mat-icon>add_photo_alternate</mat-icon>
               {{ regenerating() ? 'Generating...' : 'Generate Image' }}
             </button>
+            <button mat-stroked-button [disabled]="uploading()"
+              (click)="noImageFileInput.click()">
+              <mat-icon>upload</mat-icon>
+              {{ uploading() ? 'Uploading...' : 'Upload Image' }}
+            </button>
+            <input #noImageFileInput type="file" accept="image/*" hidden
+              (change)="onFileSelected($event)" />
           </div>
         }
 
@@ -193,6 +207,7 @@ export class PostPreviewComponent implements OnInit {
   approving = signal(false);
   deleting = signal(false);
   regenerating = signal(false);
+  uploading = signal(false);
   renderedContent = signal('');
 
   private postId = '';
@@ -241,6 +256,27 @@ export class PostPreviewComponent implements OnInit {
       },
       error: () => this.deleting.set(false),
     });
+  }
+
+  onFileSelected(event: Event): void {
+    const input = event.target as HTMLInputElement;
+    const file = input.files?.[0];
+    if (!file) return;
+
+    this.uploading.set(true);
+    const reader = new FileReader();
+    reader.onload = () => {
+      const dataUrl = reader.result as string;
+      this.api.uploadImage(this.postId, dataUrl).subscribe({
+        next: r => {
+          this.post.set(r.post);
+          this.uploading.set(false);
+        },
+        error: () => this.uploading.set(false),
+      });
+    };
+    reader.readAsDataURL(file);
+    input.value = '';
   }
 
   regenerateImage(): void {
