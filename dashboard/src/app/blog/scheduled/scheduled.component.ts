@@ -1,23 +1,23 @@
 import { Component, signal, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
 import { RouterModule } from '@angular/router';
+import { CdkDragDrop, DragDropModule, moveItemInArray } from '@angular/cdk/drag-drop';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
-import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
 import { BlogApiService, Post } from '../../core/blog-api.service';
 
 @Component({
-  selector: 'app-drafts',
+  selector: 'app-scheduled',
   standalone: true,
   imports: [
     CommonModule,
     DatePipe,
     RouterModule,
+    DragDropModule,
     MatButtonModule,
     MatIconModule,
-    MatChipsModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
   ],
@@ -29,7 +29,27 @@ import { BlogApiService, Post } from '../../core/blog-api.service';
       margin-bottom: 12px;
       display: flex;
       gap: 16px;
-      align-items: flex-start;
+      align-items: center;
+      cursor: grab;
+      transition: border-color 0.15s;
+    }
+
+    .post-card:active { cursor: grabbing; }
+
+    .post-card.cdk-drag-preview {
+      background: #111;
+      border-color: #a78bfa;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.5);
+    }
+
+    .post-card.cdk-drag-placeholder {
+      opacity: 0.3;
+    }
+
+    .drag-handle {
+      color: #333;
+      flex-shrink: 0;
+      cursor: grab;
     }
 
     .post-image {
@@ -73,17 +93,6 @@ import { BlogApiService, Post } from '../../core/blog-api.service';
       text-decoration: underline;
     }
 
-    .post-excerpt {
-      font-size: 0.78rem;
-      color: #666;
-      line-height: 1.5;
-      margin-bottom: 8px;
-      display: -webkit-box;
-      -webkit-line-clamp: 2;
-      -webkit-box-orient: vertical;
-      overflow: hidden;
-    }
-
     .post-meta {
       display: flex;
       align-items: center;
@@ -93,24 +102,25 @@ import { BlogApiService, Post } from '../../core/blog-api.service';
       flex-wrap: wrap;
     }
 
-    .badge {
-      padding: 2px 8px;
-      border-radius: 12px;
-      font-size: 0.7rem;
+    .scheduled-date {
+      color: #6bcb77;
       font-weight: 500;
     }
 
-    .badge-generated { background: #1a1a2e; color: #a78bfa; }
-    .badge-scheduled { background: #1a2e1a; color: #6bcb77; }
-
-    .post-actions { display: flex; flex-direction: column; gap: 4px; flex-shrink: 0; }
+    .post-actions { display: flex; gap: 4px; flex-shrink: 0; }
 
     .spinner-wrap { display: flex; justify-content: center; padding: 48px; }
+
+    .reorder-hint {
+      font-size: 0.75rem;
+      color: #444;
+      margin-bottom: 16px;
+    }
   `],
   template: `
     <div class="page">
       <div class="page-header">
-        <h1>Drafts</h1>
+        <h1>Scheduled</h1>
         <button mat-stroked-button (click)="load()">
           <mat-icon>refresh</mat-icon> Refresh
         </button>
@@ -119,61 +129,60 @@ import { BlogApiService, Post } from '../../core/blog-api.service';
       @if (loading()) {
         <div class="spinner-wrap"><mat-spinner diameter="36" /></div>
       } @else if (posts().length) {
-        @for (post of posts(); track post.id) {
-          <div class="post-card">
-            @if (post.featured_image) {
-              <img class="post-image" [src]="post.featured_image.url"
-                [alt]="post.featured_image.alt" />
-            } @else {
-              <div class="post-image-placeholder">
-                <mat-icon>image</mat-icon>
-              </div>
-            }
+        <p class="reorder-hint">Drag to reorder — publish dates will adjust automatically</p>
 
-            <div class="post-body">
-              <div class="post-title"><a [routerLink]="['/blog/drafts', post.id]">{{ post.title }}</a></div>
-              <div class="post-excerpt">{{ post.excerpt }}</div>
-              <div class="post-meta">
-                <span>{{ post.word_count | number }} words</span>
-                <span>{{ post.created_at | date:'MMM d, y' }}</span>
-                @if (post.generated) {
-                  <span class="badge badge-generated">AI</span>
-                }
-                @for (tag of post.tags.slice(0, 3); track tag) {
-                  <span class="tag">{{ tag }}</span>
-                }
-              </div>
-            </div>
+        <div cdkDropList (cdkDropListDropped)="drop($event)">
+          @for (post of posts(); track post.id) {
+            <div class="post-card" cdkDrag>
+              <mat-icon class="drag-handle" cdkDragHandle>drag_indicator</mat-icon>
 
-            <div class="post-actions">
-              @if (post.status === 'draft') {
-                <button mat-stroked-button [disabled]="approving() === post.id"
-                  (click)="approve(post)" matTooltip="Schedule for publishing">
-                  <mat-icon>schedule_send</mat-icon>
-                  {{ approving() === post.id ? 'Scheduling...' : 'Approve' }}
-                </button>
+              @if (post.featured_image) {
+                <img class="post-image" [src]="post.featured_image.url"
+                  [alt]="post.featured_image.alt" />
+              } @else {
+                <div class="post-image-placeholder">
+                  <mat-icon>image</mat-icon>
+                </div>
               }
-              <button mat-icon-button (click)="remove(post)"
-                [disabled]="deleting() === post.id"
-                matTooltip="Delete post">
-                <mat-icon style="color:#ef4444">delete_outline</mat-icon>
-              </button>
+
+              <div class="post-body">
+                <div class="post-title">
+                  <a [routerLink]="['/blog/drafts', post.id]">{{ post.title }}</a>
+                </div>
+                <div class="post-meta">
+                  <span class="scheduled-date">{{ post.scheduled_for | date:'EEE, MMM d, y' }}</span>
+                  <span>{{ post.word_count | number }} words</span>
+                  @if (post.generated) {
+                    <span style="color:#a78bfa">AI</span>
+                  }
+                  @for (tag of post.tags.slice(0, 3); track tag) {
+                    <span class="tag">{{ tag }}</span>
+                  }
+                </div>
+              </div>
+
+              <div class="post-actions">
+                <button mat-icon-button (click)="remove(post)"
+                  [disabled]="deleting() === post.id"
+                  matTooltip="Delete post">
+                  <mat-icon style="color:#ef4444">delete_outline</mat-icon>
+                </button>
+              </div>
             </div>
-          </div>
-        }
+          }
+        </div>
       } @else {
         <div class="empty-state">
-          <mat-icon style="font-size:48px;height:48px;width:48px;color:#333">edit_note</mat-icon>
-          <p>No drafts yet — generate a post from the Queue page</p>
+          <mat-icon style="font-size:48px;height:48px;width:48px;color:#333">schedule</mat-icon>
+          <p>No scheduled posts — approve drafts to schedule them</p>
         </div>
       }
     </div>
   `,
 })
-export class DraftsComponent implements OnInit {
+export class ScheduledComponent implements OnInit {
   posts = signal<Post[]>([]);
   loading = signal(false);
-  approving = signal<string | null>(null);
   deleting = signal<string | null>(null);
 
   constructor(private api: BlogApiService) {}
@@ -184,20 +193,20 @@ export class DraftsComponent implements OnInit {
 
   load(): void {
     this.loading.set(true);
-    this.api.getDrafts().subscribe({
+    this.api.getScheduled().subscribe({
       next: r => { this.posts.set(r.posts); this.loading.set(false); },
       error: () => this.loading.set(false),
     });
   }
 
-  approve(post: Post): void {
-    this.approving.set(post.id);
-    this.api.approvePost(post.id).subscribe({
-      next: () => {
-        this.posts.update(list => list.filter(p => p.id !== post.id));
-        this.approving.set(null);
-      },
-      error: () => this.approving.set(null),
+  drop(event: CdkDragDrop<Post[]>): void {
+    const list = [...this.posts()];
+    moveItemInArray(list, event.previousIndex, event.currentIndex);
+    this.posts.set(list);
+
+    const ids = list.map(p => p.id);
+    this.api.reorderScheduled(ids).subscribe({
+      next: r => this.posts.set(r.posts),
     });
   }
 

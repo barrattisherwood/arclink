@@ -54,11 +54,51 @@ router.get('/', resolveTenant, async (req: Request, res: Response): Promise<void
   res.json({ posts, total, page, pages: Math.ceil(total / limit) });
 });
 
-// GET /posts/:tenantId/drafts — list drafts (protected)
+// GET /posts/:tenantId/drafts — list drafts only (protected)
 router.get('/drafts', requireAuth, async (req: Request, res: Response): Promise<void> => {
   const { tenantId } = req.params;
-  const posts = await Post.find({ tenant_id: tenantId, status: { $in: ['draft', 'scheduled'] } })
+  const posts = await Post.find({ tenant_id: tenantId, status: 'draft' })
     .sort({ created_at: -1 })
+    .select('-content');
+  res.json({ posts });
+});
+
+// GET /posts/:tenantId/scheduled — list scheduled posts (protected)
+router.get('/scheduled', requireAuth, async (req: Request, res: Response): Promise<void> => {
+  const { tenantId } = req.params;
+  const posts = await Post.find({ tenant_id: tenantId, status: 'scheduled' })
+    .sort({ scheduled_for: 1 })
+    .select('-content');
+  res.json({ posts });
+});
+
+// PATCH /posts/:tenantId/scheduled/reorder — reorder scheduled posts (protected)
+router.patch('/scheduled/reorder', requireAuth, async (req: Request, res: Response): Promise<void> => {
+  const { tenantId } = req.params;
+  const { ids } = req.body as { ids: string[] };
+
+  if (!ids?.length) {
+    res.status(400).json({ error: 'ids array is required' });
+    return;
+  }
+
+  const tenant = req.tenant!;
+  const baseDate = new Date();
+  const daysBetween = 7; // one post per week
+
+  for (let i = 0; i < ids.length; i++) {
+    const scheduledFor = new Date(baseDate);
+    scheduledFor.setUTCDate(scheduledFor.getUTCDate() + (i + 1) * daysBetween);
+    scheduledFor.setUTCHours(tenant.blog_publish_hour, 0, 0, 0);
+
+    await Post.updateOne(
+      { id: ids[i], tenant_id: tenantId, status: 'scheduled' },
+      { $set: { scheduled_for: scheduledFor } },
+    );
+  }
+
+  const posts = await Post.find({ tenant_id: tenantId, status: 'scheduled' })
+    .sort({ scheduled_for: 1 })
     .select('-content');
   res.json({ posts });
 });

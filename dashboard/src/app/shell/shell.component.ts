@@ -73,8 +73,13 @@ import { MatIconModule } from '@angular/material/icon';
         <a class="nav-link" routerLink="/blog" routerLinkActive="active" [routerLinkActiveOptions]="{exact:true}">
           <mat-icon>queue</mat-icon> Queue
         </a>
-        <a class="nav-link" routerLink="/blog/drafts" routerLinkActive="active">
+        <a class="nav-link" routerLink="/blog/drafts" routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact:true}">
           <mat-icon>edit_note</mat-icon> Drafts
+        </a>
+        <a class="nav-link" routerLink="/blog/scheduled" routerLinkActive="active"
+          [routerLinkActiveOptions]="{exact:true}">
+          <mat-icon>schedule</mat-icon> Scheduled
         </a>
         <a class="nav-link" routerLink="/blog/published" routerLinkActive="active">
           <mat-icon>public</mat-icon> Published

@@ -111,6 +111,21 @@ export class BlogApiService {
     );
   }
 
+  getScheduled(): Observable<{ posts: Post[] }> {
+    return this.http.get<{ posts: Post[] }>(
+      `${this.base}/posts/${this.tenantId}/scheduled`,
+      { headers: this.headers },
+    );
+  }
+
+  reorderScheduled(ids: string[]): Observable<{ posts: Post[] }> {
+    return this.http.patch<{ posts: Post[] }>(
+      `${this.base}/posts/${this.tenantId}/scheduled/reorder`,
+      { ids },
+      { headers: this.headers },
+    );
+  }
+
   getPublished(): Observable<{ posts: Post[]; total: number; pages: number }> {
     return this.http.get<{ posts: Post[]; total: number; pages: number }>(
       `${this.base}/posts/${this.tenantId}`,
