@@ -21,18 +21,32 @@ async function uniqueSlug(tenantId: string, base: string): Promise<string> {
   return slug;
 }
 
-function nextPublishDate(tenant: IBlogTenant): Date {
-  const now = new Date();
+async function nextPublishDate(tenant: IBlogTenant, tenantId: string): Promise<Date> {
   const targetDay = tenant.blog_publish_day;
   const targetHour = tenant.blog_publish_hour;
 
-  const date = new Date(now);
-  date.setUTCHours(targetHour, 0, 0, 0);
+  // Get all dates that already have a scheduled post
+  const scheduled = await Post.find(
+    { tenant_id: tenantId, status: 'scheduled', scheduled_for: { $ne: null } },
+  ).select('scheduled_for');
+
+  const takenDates = new Set(
+    scheduled.map(p => p.scheduled_for!.toISOString().split('T')[0]),
+  );
+
+  // Walk forward week by week until we find a slot that isn't taken
+  const now = new Date();
+  const candidate = new Date(now);
+  candidate.setUTCHours(targetHour, 0, 0, 0);
 
   const daysUntil = (targetDay - now.getUTCDay() + 7) % 7 || 7;
-  date.setUTCDate(date.getUTCDate() + daysUntil);
+  candidate.setUTCDate(candidate.getUTCDate() + daysUntil);
 
-  return date;
+  while (takenDates.has(candidate.toISOString().split('T')[0])) {
+    candidate.setUTCDate(candidate.getUTCDate() + 7);
+  }
+
+  return candidate;
 }
 
 // GET /posts/:tenantId — list published posts (public)
@@ -311,7 +325,7 @@ router.patch('/:postId', requireAuth, async (req: Request, res: Response): Promi
       // If no explicit date provided, auto-calculate from tenant cadence config
       post.scheduled_for = scheduled_for
         ? new Date(scheduled_for)
-        : nextPublishDate(tenant);
+        : await nextPublishDate(tenant, tenantId);
     }
 
     if (status === 'published' && !post.published_at) {
