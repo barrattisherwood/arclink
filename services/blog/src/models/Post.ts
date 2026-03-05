@@ -17,6 +17,10 @@ export interface IPost extends Document {
   slug: string;
   excerpt: string;
   content: string;
+  seo_title: string;
+  seo_description: string;
+  categories: string[];
+  reading_time: number;
   status: 'draft' | 'scheduled' | 'published';
   scheduled_for: Date | null;
   published_at: Date | null;
@@ -53,6 +57,10 @@ const PostSchema = new Schema<IPost>({
     }),
     default: null,
   },
+  seo_title: { type: String, default: '' },
+  seo_description: { type: String, default: '' },
+  categories: { type: [String], default: [] },
+  reading_time: { type: Number, default: 0 },
   word_count: { type: Number, required: true, default: 0 },
   generated: { type: Boolean, required: true, default: false },
   created_at: { type: Date, required: true, default: Date.now },

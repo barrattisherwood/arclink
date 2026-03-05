@@ -6,6 +6,9 @@ const client = new Anthropic();
 export interface GeneratedPost {
   content: string;
   excerpt: string;
+  seo_title: string;
+  seo_description: string;
+  categories: string[];
   tags: string[];
   unsplash_keyword: string;
   alt_text: string;
@@ -25,7 +28,11 @@ export async function generatePost(
     ? `Choose 3–5 tags from this list where relevant, but you may add new ones if needed: ${tenant.blog_predefined_tags.join(', ')}.`
     : 'Generate 3–5 relevant tags for this post.';
 
-  const prompt = `You are a professional blog writer. Write a high-quality blog post for the following brief.
+  const categoryInstruction = tenant.blog_predefined_categories?.length > 0
+    ? `Choose 1–2 categories from this list: ${tenant.blog_predefined_categories.join(', ')}.`
+    : 'Assign 1–2 broad topic categories for this post (e.g. "Strategy", "Technology", "Growth").';
+
+  const prompt = `You are a professional blog writer and SEO specialist. Write a high-quality blog post for the following brief.
 
 Blog subject: ${tenant.blog_subject}
 Target audience: ${tenant.blog_audience}
@@ -39,13 +46,29 @@ Write the full blog post in markdown. Do not include the title as an H1 — star
 
 After the post, output a JSON block (fenced with \`\`\`json) with this exact structure:
 {
-  "excerpt": "A 1–2 sentence meta description optimised for SEO (max 160 chars)",
+  "seo_title": "SERP-optimised title, max 60 characters — concise, includes primary keyword, may differ from the post title",
+  "seo_description": "Meta description for search results, max 155 characters — includes primary keyword, has a clear value proposition or call-to-action",
+  "excerpt": "A 2–3 sentence preview for blog listing cards (max 300 chars) — engaging summary that makes people want to read more",
+  "categories": ["Category1"],
   "tags": ["tag1", "tag2", "tag3"],
   "unsplash_keyword": "a short 2–3 word search term for a relevant Unsplash photo",
   "alt_text": "descriptive alt text for the featured image"
 }
 
-${tagInstruction}`;
+SEO title guidelines:
+- Must be under 60 characters (Google truncates at ~60)
+- Include the primary keyword near the front
+- Make it compelling for click-through in search results
+- Can differ from the post title if the post title is too long or not SERP-friendly
+
+Meta description guidelines:
+- Must be under 155 characters (Google truncates at ~155-160)
+- Include the primary keyword naturally
+- End with a value proposition or subtle CTA
+- Should read as a complete thought, not a truncated sentence
+
+${tagInstruction}
+${categoryInstruction}`;
 
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
@@ -59,7 +82,10 @@ ${tagInstruction}`;
   if (!jsonMatch) throw new Error('Claude did not return expected JSON block');
 
   const meta = JSON.parse(jsonMatch[1]) as {
+    seo_title: string;
+    seo_description: string;
     excerpt: string;
+    categories: string[];
     tags: string[];
     unsplash_keyword: string;
     alt_text: string;
@@ -70,6 +96,9 @@ ${tagInstruction}`;
   return {
     content,
     excerpt: meta.excerpt,
+    seo_title: meta.seo_title || title.slice(0, 60),
+    seo_description: meta.seo_description || meta.excerpt.slice(0, 155),
+    categories: meta.categories || [],
     tags: meta.tags,
     unsplash_keyword: meta.unsplash_keyword,
     alt_text: meta.alt_text,

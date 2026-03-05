@@ -14,6 +14,8 @@ export interface IBlogTenant extends Document {
   blog_publish_day: number;
   blog_publish_hour: number;
   blog_predefined_tags: string[];
+  blog_predefined_categories: string[];
+  blog_canonical_base: string;
   created_at: Date;
 }
 
@@ -31,6 +33,8 @@ const BlogTenantSchema = new Schema<IBlogTenant>({
   blog_publish_day: { type: Number, required: true, default: 2 },
   blog_publish_hour: { type: Number, required: true, default: 9 },
   blog_predefined_tags: { type: [String], default: [] },
+  blog_predefined_categories: { type: [String], default: [] },
+  blog_canonical_base: { type: String, default: '' },
   created_at: { type: Date, required: true, default: Date.now },
 });
 

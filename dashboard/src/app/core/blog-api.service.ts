@@ -21,6 +21,10 @@ export interface Post {
   title: string;
   slug: string;
   excerpt: string;
+  seo_title: string;
+  seo_description: string;
+  categories: string[];
+  reading_time: number;
   status: 'draft' | 'scheduled' | 'published';
   tags: string[];
   word_count: number;
@@ -129,6 +133,14 @@ export class BlogApiService {
   getPublished(): Observable<{ posts: Post[]; total: number; pages: number }> {
     return this.http.get<{ posts: Post[]; total: number; pages: number }>(
       `${this.base}/posts/${this.tenantId}`,
+    );
+  }
+
+  updatePost(postId: string, data: Partial<Pick<Post, 'seo_title' | 'seo_description' | 'categories' | 'tags' | 'excerpt' | 'title'>>): Observable<{ post: Post }> {
+    return this.http.patch<{ post: Post }>(
+      `${this.base}/posts/${this.tenantId}/${postId}`,
+      data,
+      { headers: this.headers },
     );
   }
 

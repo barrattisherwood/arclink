@@ -49,6 +49,8 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
   const slug = await uniqueSlug(tenantId, base);
   const word_count = generated.content.trim().split(/\s+/).length;
 
+  const reading_time = Math.ceil(word_count / 200);
+
   const post = await Post.create({
     id: randomUUID(),
     tenant_id: tenantId,
@@ -56,6 +58,10 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
     slug,
     excerpt: generated.excerpt,
     content: generated.content,
+    seo_title: generated.seo_title,
+    seo_description: generated.seo_description,
+    categories: generated.categories,
+    reading_time,
     status: 'draft',
     scheduled_for: null,
     published_at: null,

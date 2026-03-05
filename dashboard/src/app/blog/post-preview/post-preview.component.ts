@@ -1,11 +1,14 @@
 import { Component, signal, OnInit } from '@angular/core';
 import { CommonModule, DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterModule } from '@angular/router';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
 import { MatChipsModule } from '@angular/material/chips';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatTooltipModule } from '@angular/material/tooltip';
+import { MatInputModule } from '@angular/material/input';
+import { MatFormFieldModule } from '@angular/material/form-field';
 import { BlogApiService, Post } from '../../core/blog-api.service';
 
 @Component({
@@ -14,12 +17,15 @@ import { BlogApiService, Post } from '../../core/blog-api.service';
   imports: [
     CommonModule,
     DatePipe,
+    FormsModule,
     RouterModule,
     MatButtonModule,
     MatIconModule,
     MatChipsModule,
     MatProgressSpinnerModule,
     MatTooltipModule,
+    MatInputModule,
+    MatFormFieldModule,
   ],
   styles: [`
     .preview-header {
@@ -109,6 +115,121 @@ import { BlogApiService, Post } from '../../core/blog-api.service';
     }
 
     .spinner-wrap { display: flex; justify-content: center; padding: 48px; }
+
+    .seo-section {
+      border: 1px solid #1a1a1a;
+      border-radius: 8px;
+      margin-bottom: 24px;
+    }
+
+    .seo-header {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 16px;
+      cursor: pointer;
+      user-select: none;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: #999;
+    }
+
+    .seo-header:hover { color: #ccc; }
+
+    .seo-body {
+      padding: 0 16px 16px;
+    }
+
+    .seo-field {
+      margin-bottom: 16px;
+    }
+
+    .seo-field label {
+      display: block;
+      font-size: 0.72rem;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 6px;
+    }
+
+    .seo-field input, .seo-field textarea {
+      width: 100%;
+      background: #111;
+      border: 1px solid #222;
+      border-radius: 4px;
+      padding: 8px 10px;
+      color: #ccc;
+      font-size: 0.85rem;
+      font-family: inherit;
+      resize: vertical;
+    }
+
+    .seo-field input:focus, .seo-field textarea:focus {
+      outline: none;
+      border-color: #a78bfa;
+    }
+
+    .char-count {
+      font-size: 0.7rem;
+      color: #444;
+      text-align: right;
+      margin-top: 4px;
+    }
+
+    .char-count.over { color: #ef4444; }
+
+    .serp-preview {
+      background: #111;
+      border-radius: 6px;
+      padding: 14px;
+      margin-top: 8px;
+    }
+
+    .serp-preview-label {
+      font-size: 0.7rem;
+      color: #444;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 8px;
+    }
+
+    .serp-title {
+      font-size: 1.1rem;
+      color: #8ab4f8;
+      margin-bottom: 2px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .serp-url {
+      font-size: 0.78rem;
+      color: #bdc1c6;
+      margin-bottom: 4px;
+    }
+
+    .serp-desc {
+      font-size: 0.82rem;
+      color: #969ba1;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .seo-save-row {
+      display: flex;
+      justify-content: flex-end;
+      gap: 8px;
+    }
+
+    .category-chips {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 4px;
+    }
   `],
   template: `
     <div class="page">
@@ -160,6 +281,7 @@ import { BlogApiService, Post } from '../../core/blog-api.service';
 
         <div class="post-meta">
           <span>{{ post()!.word_count | number }} words</span>
+          <span>{{ post()!.reading_time }} min read</span>
           <span>{{ post()!.created_at | date:'MMM d, y' }}</span>
           @if (post()!.generated) {
             <span class="badge badge-generated">AI Generated</span>
@@ -172,6 +294,62 @@ import { BlogApiService, Post } from '../../core/blog-api.service';
           }
           @for (tag of post()!.tags; track tag) {
             <mat-chip-option disabled>{{ tag }}</mat-chip-option>
+          }
+        </div>
+
+        <div class="seo-section">
+          <div class="seo-header" (click)="seoOpen.set(!seoOpen())">
+            <mat-icon>{{ seoOpen() ? 'expand_less' : 'expand_more' }}</mat-icon>
+            <mat-icon style="font-size:16px;height:16px;width:16px">search</mat-icon>
+            SEO Settings
+          </div>
+          @if (seoOpen()) {
+            <div class="seo-body">
+              <div class="seo-field">
+                <label>SEO Title (max 60 characters)</label>
+                <input type="text" [(ngModel)]="seoTitle" maxlength="70"
+                  placeholder="SERP-optimised title..." />
+                <div class="char-count" [class.over]="seoTitle.length > 60">
+                  {{ seoTitle.length }} / 60
+                </div>
+              </div>
+
+              <div class="seo-field">
+                <label>Meta Description (max 155 characters)</label>
+                <textarea rows="2" [(ngModel)]="seoDescription" maxlength="200"
+                  placeholder="Search result description..."></textarea>
+                <div class="char-count" [class.over]="seoDescription.length > 155">
+                  {{ seoDescription.length }} / 155
+                </div>
+              </div>
+
+              <div class="seo-field">
+                <label>Categories</label>
+                <div class="category-chips">
+                  @for (cat of post()!.categories; track cat) {
+                    <mat-chip-option disabled>{{ cat }}</mat-chip-option>
+                  }
+                  @empty {
+                    <span style="color:#444;font-size:0.8rem">No categories assigned</span>
+                  }
+                </div>
+              </div>
+
+              <div class="serp-preview">
+                <div class="serp-preview-label">Google Search Preview</div>
+                <div class="serp-title">{{ seoTitle || post()!.title }}</div>
+                <div class="serp-url">{{ post()!.slug }}</div>
+                <div class="serp-desc">{{ seoDescription || post()!.excerpt }}</div>
+              </div>
+
+              <div class="seo-save-row" style="margin-top:12px">
+                <button mat-stroked-button [disabled]="savingSeo()"
+                  (click)="saveSeo()">
+                  <mat-icon>save</mat-icon>
+                  {{ savingSeo() ? 'Saving...' : 'Save SEO' }}
+                </button>
+              </div>
+            </div>
           }
         </div>
 
@@ -208,7 +386,12 @@ export class PostPreviewComponent implements OnInit {
   deleting = signal(false);
   regenerating = signal(false);
   uploading = signal(false);
+  savingSeo = signal(false);
+  seoOpen = signal(false);
   renderedContent = signal('');
+
+  seoTitle = '';
+  seoDescription = '';
 
   private postId = '';
 
@@ -228,6 +411,8 @@ export class PostPreviewComponent implements OnInit {
     this.api.getPost(this.postId).subscribe({
       next: r => {
         this.post.set(r.post);
+        this.seoTitle = r.post.seo_title || '';
+        this.seoDescription = r.post.seo_description || '';
         this.renderedContent.set(this.markdownToHtml(r.post.content ?? ''));
         this.loading.set(false);
       },
@@ -277,6 +462,20 @@ export class PostPreviewComponent implements OnInit {
     };
     reader.readAsDataURL(file);
     input.value = '';
+  }
+
+  saveSeo(): void {
+    this.savingSeo.set(true);
+    this.api.updatePost(this.postId, {
+      seo_title: this.seoTitle,
+      seo_description: this.seoDescription,
+    }).subscribe({
+      next: r => {
+        this.post.set(r.post);
+        this.savingSeo.set(false);
+      },
+      error: () => this.savingSeo.set(false),
+    });
   }
 
   regenerateImage(): void {

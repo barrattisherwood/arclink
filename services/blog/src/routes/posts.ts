@@ -187,14 +187,48 @@ router.get('/:slug', resolveTenant, async (req: Request, res: Response): Promise
   res.json({ post });
 });
 
+// GET /posts/:tenantId/sitemap.xml — sitemap of published posts (public)
+router.get('/sitemap.xml', resolveTenant, async (req: Request, res: Response): Promise<void> => {
+  const { tenantId } = req.params;
+  const tenant = req.tenant!;
+  const canonicalBase = tenant.blog_canonical_base || `https://${req.headers.host}`;
+
+  const posts = await Post.find({ tenant_id: tenantId, status: 'published' })
+    .sort({ published_at: -1 })
+    .select('slug published_at created_at');
+
+  const urls = posts.map(post => `
+  <url>
+    <loc>${canonicalBase}/blog/${post.slug}</loc>
+    <lastmod>${(post.published_at ?? post.created_at).toISOString().split('T')[0]}</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.7</priority>
+  </url>`).join('');
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>${canonicalBase}/blog</loc>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>${urls}
+</urlset>`;
+
+  res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+  res.send(xml);
+});
+
 // POST /posts/:tenantId — create post manually (protected)
 router.post('/', requireAuth, async (req: Request, res: Response): Promise<void> => {
   const { tenantId } = req.params;
-  const { title, content, excerpt, tags, status, scheduled_for } = req.body as {
+  const { title, content, excerpt, tags, categories, seo_title, seo_description, status, scheduled_for } = req.body as {
     title: string;
     content: string;
     excerpt: string;
     tags?: string[];
+    categories?: string[];
+    seo_title?: string;
+    seo_description?: string;
     status?: 'draft' | 'scheduled';
     scheduled_for?: string;
   };
@@ -207,6 +241,7 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
   const base = makeSlug(title);
   const slug = await uniqueSlug(tenantId, base);
   const word_count = content.trim().split(/\s+/).length;
+  const reading_time = Math.ceil(word_count / 200);
 
   const post = await Post.create({
     id: randomUUID(),
@@ -215,6 +250,10 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
     slug,
     excerpt,
     content,
+    seo_title: seo_title || title.slice(0, 60),
+    seo_description: seo_description || excerpt.slice(0, 155),
+    categories: categories ?? [],
+    reading_time,
     status: status ?? 'draft',
     scheduled_for: scheduled_for ? new Date(scheduled_for) : null,
     tags: tags ?? [],
@@ -237,11 +276,14 @@ router.patch('/:postId', requireAuth, async (req: Request, res: Response): Promi
     return;
   }
 
-  const { title, content, excerpt, tags, status, scheduled_for } = req.body as {
+  const { title, content, excerpt, tags, categories, seo_title, seo_description, status, scheduled_for } = req.body as {
     title?: string;
     content?: string;
     excerpt?: string;
     tags?: string[];
+    categories?: string[];
+    seo_title?: string;
+    seo_description?: string;
     status?: 'draft' | 'scheduled' | 'published';
     scheduled_for?: string | null;
   };
@@ -254,9 +296,13 @@ router.patch('/:postId', requireAuth, async (req: Request, res: Response): Promi
   if (content) {
     post.content = content;
     post.word_count = content.trim().split(/\s+/).length;
+    post.reading_time = Math.ceil(post.word_count / 200);
   }
   if (excerpt) post.excerpt = excerpt;
   if (tags) post.tags = tags;
+  if (categories) post.categories = categories;
+  if (seo_title !== undefined) post.seo_title = seo_title;
+  if (seo_description !== undefined) post.seo_description = seo_description;
 
   if (status) {
     post.status = status;
