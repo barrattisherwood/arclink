@@ -4,6 +4,7 @@ import slugify from 'slugify';
 import { requireAuth, resolveTenant } from '../middleware/auth';
 import { Post } from '../models/Post';
 import { IBlogTenant } from '../models/BlogTenant';
+import { fetchUnsplashImage } from '../services/unsplash';
 
 const router = Router({ mergeParams: true });
 
@@ -71,6 +72,31 @@ router.get('/preview/:postId', requireAuth, async (req: Request, res: Response):
     res.status(404).json({ error: 'Post not found' });
     return;
   }
+
+  res.json({ post });
+});
+
+// POST /posts/:tenantId/:postId/regenerate-image — fetch a new Unsplash image (protected)
+router.post('/:postId/regenerate-image', requireAuth, async (req: Request, res: Response): Promise<void> => {
+  const { tenantId, postId } = req.params;
+  const { keyword } = req.body as { keyword?: string };
+
+  const post = await Post.findOne({ id: postId, tenant_id: tenantId });
+  if (!post) {
+    res.status(404).json({ error: 'Post not found' });
+    return;
+  }
+
+  const searchKeyword = keyword || post.title;
+  const image = await fetchUnsplashImage(searchKeyword, post.title);
+
+  if (!image) {
+    res.status(502).json({ error: 'Failed to fetch image from Unsplash' });
+    return;
+  }
+
+  post.featured_image = image;
+  await post.save();
 
   res.json({ post });
 });

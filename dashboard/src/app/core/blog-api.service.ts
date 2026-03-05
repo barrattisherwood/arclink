@@ -132,6 +132,14 @@ export class BlogApiService {
     );
   }
 
+  regenerateImage(postId: string, keyword?: string): Observable<{ post: Post }> {
+    return this.http.post<{ post: Post }>(
+      `${this.base}/posts/${this.tenantId}/${postId}/regenerate-image`,
+      keyword ? { keyword } : {},
+      { headers: this.headers },
+    );
+  }
+
   deletePost(postId: string): Observable<{ ok: boolean }> {
     return this.http.delete<{ ok: boolean }>(
       `${this.base}/posts/${this.tenantId}/${postId}`,

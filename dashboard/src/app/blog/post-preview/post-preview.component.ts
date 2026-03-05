@@ -35,12 +35,34 @@ import { BlogApiService, Post } from '../../core/blog-api.service';
       font-size: 1.5rem;
     }
 
+    .image-container {
+      position: relative;
+      margin-bottom: 24px;
+    }
+
     .featured-image {
       width: 100%;
       max-height: 360px;
       object-fit: cover;
       border-radius: 8px;
+    }
+
+    .image-actions {
+      position: absolute;
+      bottom: 12px;
+      right: 12px;
+    }
+
+    .no-image {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 12px;
+      height: 160px;
+      border: 1px dashed #333;
+      border-radius: 8px;
       margin-bottom: 24px;
+      color: #666;
     }
 
     .post-meta {
@@ -101,8 +123,25 @@ import { BlogApiService, Post } from '../../core/blog-api.service';
         </div>
 
         @if (post()!.featured_image) {
-          <img class="featured-image" [src]="post()!.featured_image!.url"
-            [alt]="post()!.featured_image!.alt" />
+          <div class="image-container">
+            <img class="featured-image" [src]="post()!.featured_image!.url"
+              [alt]="post()!.featured_image!.alt" />
+            <div class="image-actions">
+              <button mat-flat-button [disabled]="regenerating()"
+                (click)="regenerateImage()" style="background:#1a1a1a">
+                <mat-icon>autorenew</mat-icon>
+                {{ regenerating() ? 'Generating...' : 'New Image' }}
+              </button>
+            </div>
+          </div>
+        } @else {
+          <div class="no-image">
+            <button mat-stroked-button [disabled]="regenerating()"
+              (click)="regenerateImage()">
+              <mat-icon>add_photo_alternate</mat-icon>
+              {{ regenerating() ? 'Generating...' : 'Generate Image' }}
+            </button>
+          </div>
         }
 
         <div class="post-meta">
@@ -153,6 +192,7 @@ export class PostPreviewComponent implements OnInit {
   loading = signal(false);
   approving = signal(false);
   deleting = signal(false);
+  regenerating = signal(false);
   renderedContent = signal('');
 
   private postId = '';
@@ -200,6 +240,17 @@ export class PostPreviewComponent implements OnInit {
         this.router.navigate(['/blog/drafts']);
       },
       error: () => this.deleting.set(false),
+    });
+  }
+
+  regenerateImage(): void {
+    this.regenerating.set(true);
+    this.api.regenerateImage(this.postId).subscribe({
+      next: r => {
+        this.post.set(r.post);
+        this.regenerating.set(false);
+      },
+      error: () => this.regenerating.set(false),
     });
   }
 
