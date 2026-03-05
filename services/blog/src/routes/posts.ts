@@ -4,7 +4,7 @@ import slugify from 'slugify';
 import { requireAuth, resolveTenant } from '../middleware/auth';
 import { Post } from '../models/Post';
 import { IBlogTenant } from '../models/BlogTenant';
-import { fetchUnsplashImage } from '../services/unsplash';
+import { fetchUnsplashImageWithFallbacks } from '../services/unsplash';
 
 const router = Router({ mergeParams: true });
 
@@ -87,8 +87,14 @@ router.post('/:postId/regenerate-image', requireAuth, async (req: Request, res: 
     return;
   }
 
-  const searchKeyword = keyword || post.tags?.[0] || post.title.split(' ').slice(0, 4).join(' ');
-  const image = await fetchUnsplashImage(searchKeyword, post.title);
+  const keywords = keyword
+    ? [keyword]
+    : [
+        ...(post.tags ?? []),
+        post.title.split(' ').slice(0, 3).join(' '),
+        'technology business',
+      ];
+  const image = await fetchUnsplashImageWithFallbacks(keywords, post.title);
 
   if (!image) {
     res.status(502).json({ error: 'Failed to fetch image from Unsplash' });

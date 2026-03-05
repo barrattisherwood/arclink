@@ -12,13 +12,7 @@ interface UnsplashPhoto {
   links: { html: string };
 }
 
-export async function fetchUnsplashImage(keyword: string, altText: string): Promise<IFeaturedImage | null> {
-  const accessKey = process.env.UNSPLASH_ACCESS_KEY;
-  if (!accessKey) {
-    console.error('UNSPLASH_ACCESS_KEY is not set');
-    return null;
-  }
-
+async function searchUnsplash(keyword: string, accessKey: string): Promise<UnsplashPhoto | null> {
   const url = `${UNSPLASH_API}/search/photos?query=${encodeURIComponent(keyword)}&per_page=1&orientation=landscape`;
 
   const response = await fetch(url, {
@@ -26,15 +20,24 @@ export async function fetchUnsplashImage(keyword: string, altText: string): Prom
   });
 
   if (!response.ok) {
-    console.error('Unsplash API error:', response.status);
+    console.error('Unsplash API error:', response.status, 'for query:', keyword);
     return null;
   }
 
   const data = await response.json() as { results: UnsplashPhoto[] };
+  return data.results[0] ?? null;
+}
 
-  if (!data.results.length) return null;
+export async function fetchUnsplashImage(keyword: string, altText: string): Promise<IFeaturedImage | null> {
+  const accessKey = process.env.UNSPLASH_ACCESS_KEY;
+  if (!accessKey) {
+    console.error('UNSPLASH_ACCESS_KEY is not set');
+    return null;
+  }
 
-  const photo = data.results[0];
+  const photo = await searchUnsplash(keyword, accessKey);
+
+  if (!photo) return null;
 
   return {
     url: photo.urls.regular,
@@ -45,4 +48,29 @@ export async function fetchUnsplashImage(keyword: string, altText: string): Prom
       unsplash_url: photo.links.html,
     },
   };
+}
+
+export async function fetchUnsplashImageWithFallbacks(keywords: string[], altText: string): Promise<IFeaturedImage | null> {
+  const accessKey = process.env.UNSPLASH_ACCESS_KEY;
+  if (!accessKey) {
+    console.error('UNSPLASH_ACCESS_KEY is not set');
+    return null;
+  }
+
+  for (const keyword of keywords) {
+    const photo = await searchUnsplash(keyword, accessKey);
+    if (photo) {
+      return {
+        url: photo.urls.regular,
+        alt: altText,
+        credit: {
+          photographer: photo.user.name,
+          photographer_url: photo.user.links.html,
+          unsplash_url: photo.links.html,
+        },
+      };
+    }
+  }
+
+  return null;
 }
