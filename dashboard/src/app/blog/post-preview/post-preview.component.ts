@@ -357,10 +357,15 @@ import { BlogApiService, Post } from '../../core/blog-api.service';
 
         <div class="post-actions">
           @if (post()!.status === 'draft') {
-            <button mat-flat-button color="primary" [disabled]="approving()"
+            <button mat-flat-button color="primary" [disabled]="approving() || publishing()"
               (click)="approve()">
               <mat-icon>schedule_send</mat-icon>
-              {{ approving() ? 'Scheduling...' : 'Approve & Schedule' }}
+              {{ approving() ? 'Scheduling...' : 'Schedule' }}
+            </button>
+            <button mat-flat-button [disabled]="publishing() || approving()"
+              (click)="publishNow()" style="background:#16a34a;color:#fff">
+              <mat-icon>publish</mat-icon>
+              {{ publishing() ? 'Publishing...' : 'Publish Now' }}
             </button>
           }
           <button mat-stroked-button [disabled]="deleting()" (click)="remove()"
@@ -383,6 +388,7 @@ export class PostPreviewComponent implements OnInit {
   post = signal<Post | null>(null);
   loading = signal(false);
   approving = signal(false);
+  publishing = signal(false);
   deleting = signal(false);
   regenerating = signal(false);
   uploading = signal(false);
@@ -429,6 +435,17 @@ export class PostPreviewComponent implements OnInit {
         this.router.navigate(['/blog/drafts']);
       },
       error: () => this.approving.set(false),
+    });
+  }
+
+  publishNow(): void {
+    this.publishing.set(true);
+    this.api.publishPost(this.postId).subscribe({
+      next: () => {
+        this.publishing.set(false);
+        this.router.navigate(['/blog/drafts']);
+      },
+      error: () => this.publishing.set(false),
     });
   }
 

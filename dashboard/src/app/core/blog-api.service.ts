@@ -152,6 +152,14 @@ export class BlogApiService {
     );
   }
 
+  publishPost(postId: string): Observable<{ post: Post }> {
+    return this.http.patch<{ post: Post }>(
+      `${this.base}/posts/${this.tenantId}/${postId}`,
+      { status: 'published' },
+      { headers: this.headers },
+    );
+  }
+
   getPost(postId: string): Observable<{ post: Post }> {
     return this.http.get<{ post: Post }>(
       `${this.base}/posts/${this.tenantId}/preview/${postId}`,
