@@ -162,6 +162,11 @@ import { BlogApiService, Post } from '../../core/blog-api.service';
               </div>
 
               <div class="post-actions">
+                <button mat-icon-button (click)="publish(post)"
+                  [disabled]="publishing() === post.id"
+                  matTooltip="Publish now">
+                  <mat-icon style="color:#16a34a">publish</mat-icon>
+                </button>
                 <button mat-icon-button (click)="remove(post)"
                   [disabled]="deleting() === post.id"
                   matTooltip="Delete post">
@@ -183,6 +188,7 @@ import { BlogApiService, Post } from '../../core/blog-api.service';
 export class ScheduledComponent implements OnInit {
   posts = signal<Post[]>([]);
   loading = signal(false);
+  publishing = signal<string | null>(null);
   deleting = signal<string | null>(null);
 
   constructor(private api: BlogApiService) {}
@@ -207,6 +213,17 @@ export class ScheduledComponent implements OnInit {
     const ids = list.map(p => p.id);
     this.api.reorderScheduled(ids).subscribe({
       next: r => this.posts.set(r.posts),
+    });
+  }
+
+  publish(post: Post): void {
+    this.publishing.set(post.id);
+    this.api.publishPost(post.id).subscribe({
+      next: () => {
+        this.posts.update(list => list.filter(p => p.id !== post.id));
+        this.publishing.set(null);
+      },
+      error: () => this.publishing.set(null),
     });
   }
 
