@@ -14,6 +14,8 @@ const PORT = process.env.PORT ?? 3002;
 
 const ALLOWED_ORIGINS = [
   'https://dashboard.arclink.dev',
+  'https://machinum.io',
+  'https://www.machinum.io',
   'http://localhost:4200',
   'http://localhost:3000',
 ];
