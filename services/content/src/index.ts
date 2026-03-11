@@ -1,0 +1,61 @@
+import 'dotenv/config';
+import express from 'express';
+import mongoose from 'mongoose';
+import sitesRouter from './routes/sites';
+import typesRouter from './routes/types';
+import entriesRouter from './routes/entries';
+import uploadRouter from './routes/upload';
+
+const app = express();
+const PORT = process.env.PORT ?? 3003;
+
+const ALLOWED_ORIGINS = [
+  'https://dashboard.arclink.dev',
+  'https://machinum.io',
+  'https://www.machinum.io',
+  'http://localhost:4200',
+  'http://localhost:3000',
+];
+
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type,x-api-key');
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(204);
+    return;
+  }
+  next();
+});
+
+app.use(express.json({ limit: '5mb' }));
+
+app.use('/sites', sitesRouter);
+app.use('/types/:siteId', typesRouter);
+app.use('/entries/:siteId', entriesRouter);
+app.use('/upload/:siteId', uploadRouter);
+
+app.get('/health', (_, res) => res.json({ status: 'ok', service: 'content' }));
+
+async function start(): Promise<void> {
+  const mongoUri = process.env.MONGODB_URI;
+  if (!mongoUri) {
+    console.error('MONGODB_URI is not set');
+    process.exit(1);
+  }
+
+  await mongoose.connect(mongoUri);
+  console.log('Connected to MongoDB');
+
+  app.listen(PORT, () => {
+    console.log(`Content service listening on port ${PORT}`);
+  });
+}
+
+start().catch((err) => {
+  console.error('Failed to start:', err);
+  process.exit(1);
+});
