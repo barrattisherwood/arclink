@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import multer from 'multer';
 import { requireAuth } from '../middleware/auth';
-import { uploadToR2 } from '../services/r2';
+import { uploadImage } from '../services/cloudinary';
 
 const router = Router({ mergeParams: true });
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
@@ -13,14 +13,10 @@ router.post('/', requireAuth, upload.single('file'), async (req: Request, res: R
     return;
   }
 
-  const url = await uploadToR2(
-    req.params.siteId,
-    req.file.originalname,
-    req.file.buffer,
-    req.file.mimetype
-  );
+  const folder = `content/${req.params.siteId}`;
+  const result = await uploadImage(req.file.buffer, folder);
 
-  res.status(201).json({ url });
+  res.status(201).json(result);
 });
 
 // POST /upload/:siteId/batch — multiple file upload
@@ -32,13 +28,12 @@ router.post('/batch', requireAuth, upload.array('files', 20), async (req: Reques
     return;
   }
 
-  const urls = await Promise.all(
-    files.map((file) =>
-      uploadToR2(req.params.siteId, file.originalname, file.buffer, file.mimetype)
-    )
+  const folder = `content/${req.params.siteId}`;
+  const results = await Promise.all(
+    files.map((file) => uploadImage(file.buffer, folder))
   );
 
-  res.status(201).json({ urls });
+  res.status(201).json({ images: results });
 });
 
 export default router;
