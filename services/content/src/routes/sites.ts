@@ -5,6 +5,12 @@ import { requireAuth, resolveTenant } from '../middleware/auth';
 
 const router = Router();
 
+// GET /sites — list all tenants (admin)
+router.get('/', async (req: Request, res: Response): Promise<void> => {
+  const tenants = await ContentTenant.find({}, 'siteId name domain active').lean();
+  res.json({ sites: tenants });
+});
+
 // POST /sites — create a new tenant
 router.post('/', async (req: Request, res: Response): Promise<void> => {
   const { siteId, name, domain, adminUsers, apiKey } = req.body;

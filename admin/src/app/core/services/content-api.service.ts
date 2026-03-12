@@ -9,6 +9,13 @@ export class ContentApiService {
   private http = inject(HttpClient);
   private base = environment.contentApiUrl;
 
+  // Sites (super-admin)
+  getSites() {
+    return this.http.get<{ sites: { siteId: string; name: string; domain?: string; active: boolean }[] }>(
+      `${this.base}/sites`
+    );
+  }
+
   // Content Types
   getTypes(siteId: string) {
     return this.http.get<{ types: ContentType[] }>(`${this.base}/types/${siteId}`);

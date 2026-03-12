@@ -1,14 +1,25 @@
 import 'dotenv/config';
 import express from 'express';
 import mongoose from 'mongoose';
+import cors from 'cors';
 import submitRouter from './routes/submit';
+import submissionsRouter from './routes/submissions';
 
 const app = express();
 const PORT = process.env.PORT ?? 3001;
 
 app.use(express.json());
 
-// Handle preflight OPTIONS requests
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:4200').split(',');
+
+// CORS for admin reads
+app.use('/submissions', cors({
+  origin: ALLOWED_ORIGINS,
+  methods: ['GET', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'x-api-key'],
+}));
+
+// Handle preflight OPTIONS requests for submit
 app.options('/submit/:tenantId', (req, res) => {
   const origin = req.headers.origin;
   if (origin) {
@@ -20,6 +31,7 @@ app.options('/submit/:tenantId', (req, res) => {
 });
 
 app.use('/submit', submitRouter);
+app.use('/submissions', submissionsRouter);
 
 async function start(): Promise<void> {
   const mongoUri = process.env.MONGODB_URI;
