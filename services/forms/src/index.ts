@@ -10,7 +10,7 @@ const PORT = process.env.PORT ?? 3001;
 
 app.use(express.json());
 
-const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'http://localhost:4200').split(',');
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://admin.arclink.dev,https://dashboard.arclink.dev,http://localhost:4200').split(',');
 
 // CORS for admin reads
 app.use('/submissions', cors({

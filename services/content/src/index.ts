@@ -10,6 +10,7 @@ const app = express();
 const PORT = process.env.PORT ?? 3003;
 
 const ALLOWED_ORIGINS = [
+  'https://admin.arclink.dev',
   'https://dashboard.arclink.dev',
   'https://machinum.io',
   'https://www.machinum.io',
