@@ -14,7 +14,10 @@ const ALLOWED_ORIGINS = [
   'https://dashboard.arclink.dev',
   'https://machinum.io',
   'https://www.machinum.io',
+  'https://dlctownplanning.co.za',
+  'https://www.dlctownplanning.co.za',
   'http://localhost:4200',
+  'http://localhost:4201',
   'http://localhost:3000',
 ];
 

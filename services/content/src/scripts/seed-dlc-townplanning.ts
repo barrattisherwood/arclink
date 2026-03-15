@@ -92,7 +92,7 @@ async function seed(): Promise<void> {
     {
       siteId: SITE_ID,
       name: 'DLC Town Planning',
-      domain: 'dlcgroup.co.za',
+      domain: 'dlctownplanning.co.za',
       adminUsers: [],
       api_key: createHash('sha256').update(RAW_API_KEY).digest('hex'),
       active: true,
