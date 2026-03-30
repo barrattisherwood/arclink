@@ -37,11 +37,24 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
   const recentPosts = await Post.find({ tenant_id: tenantId, status: 'published' })
     .sort({ published_at: -1 })
     .limit(5)
-    .select('title');
+    .select('title tags');
 
   const recentTitles = recentPosts.map(p => p.title);
 
-  const generated = await generatePost(tenant, next.title, recentTitles);
+  // Resolve persona: queue entry override → alternation → null
+  const personaTags = tenant.blog_persona_prompts ? [...tenant.blog_persona_prompts.keys()] : [];
+  let personaTag: string | null = next.persona_tag ?? null;
+
+  if (!personaTag && personaTags.length > 0) {
+    // Find the last published post's persona tag to alternate
+    const lastPersona = recentPosts
+      .map(p => p.tags.find((t: string) => personaTags.includes(t)))
+      .find(Boolean) ?? null;
+    const lastIndex = lastPersona ? personaTags.indexOf(lastPersona) : -1;
+    personaTag = personaTags[(lastIndex + 1) % personaTags.length];
+  }
+
+  const generated = await generatePost(tenant, next.title, recentTitles, personaTag);
 
   const featured_image = await fetchUnsplashImage(generated.unsplash_keyword, generated.alt_text);
 
@@ -50,6 +63,12 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
   const word_count = generated.content.trim().split(/\s+/).length;
 
   const reading_time = Math.ceil(word_count / 200);
+
+  // Ensure the persona tag is included in the post tags (used for byline routing)
+  const tags = generated.tags;
+  if (personaTag && !tags.includes(personaTag)) {
+    tags.push(personaTag);
+  }
 
   const post = await Post.create({
     id: randomUUID(),
@@ -65,7 +84,7 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
     status: 'draft',
     scheduled_for: null,
     published_at: null,
-    tags: generated.tags,
+    tags,
     featured_image,
     word_count,
     generated: true,

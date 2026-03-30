@@ -23,6 +23,7 @@ export async function generatePost(
   tenant: IBlogTenant,
   title: string,
   recentTitles: string[],
+  personaTag?: string | null,
 ): Promise<GeneratedPost> {
   const tagInstruction = tenant.blog_predefined_tags.length > 0
     ? `Choose 3–5 tags from this list where relevant, but you may add new ones if needed: ${tenant.blog_predefined_tags.join(', ')}.`
@@ -70,9 +71,12 @@ Meta description guidelines:
 ${tagInstruction}
 ${categoryInstruction}`;
 
+  const personaPrompt = personaTag && tenant.blog_persona_prompts?.get(personaTag);
+
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
     max_tokens: 4096,
+    ...(personaPrompt ? { system: personaPrompt } : {}),
     messages: [{ role: 'user', content: prompt }],
   });
 
