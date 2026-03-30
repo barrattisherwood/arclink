@@ -21,9 +21,15 @@ const ALLOWED_ORIGINS = [
   'http://localhost:3000',
 ];
 
+function isAllowedOrigin(origin: string): boolean {
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  if (/\.vercel\.app$/.test(origin)) return true;
+  return false;
+}
+
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+  if (origin && isAllowedOrigin(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
@@ -35,7 +41,9 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '5mb' }));
 
 app.use('/posts/:tenantId/feed.xml', feedRouter);
+app.use('/api/posts/:tenantId/feed.xml', feedRouter);
 app.use('/posts/:tenantId', postsRouter);
+app.use('/api/posts/:tenantId', postsRouter);
 app.use('/queue/:tenantId', queueRouter);
 app.use('/generate/:tenantId', generateRouter);
 app.use('/prioritise/:tenantId', prioritiseRouter);
