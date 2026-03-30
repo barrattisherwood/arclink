@@ -74,8 +74,11 @@ export class LoginComponent {
     this.auth.login(this.email, this.password).subscribe({
       next: () => {
         const user = this.auth.user();
-        const siteId = user?.siteId === '*' ? '_' : user?.siteId;
-        this.router.navigate(['/sites', siteId, 'blog']);
+        if (user?.role === 'super-admin') {
+          this.router.navigate(['/admin/sites']);
+        } else {
+          this.router.navigate(['/sites', user?.siteId, 'blog']);
+        }
       },
       error: (err) => {
         this.loading.set(false);
