@@ -1,5 +1,5 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterLink, RouterLinkActive, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ContentApiService } from '../../core/services/content-api.service';
 import { ContentType } from '../../models/content-type.model';
@@ -93,22 +93,25 @@ import { ContentType } from '../../models/content-type.model';
 export class SidebarComponent implements OnInit {
   auth = inject(AuthService);
   private contentApi = inject(ContentApiService);
+  private route = inject(ActivatedRoute);
 
   contentTypes = signal<ContentType[]>([]);
 
+  private get currentSiteId(): string | null {
+    return this.route.snapshot.paramMap.get('siteId');
+  }
+
   siteBase(): string {
-    const user = this.auth.user();
-    if (!user) return '/sites/_';
-    return user.siteId === '*' ? '/sites/_' : `/sites/${user.siteId}`;
+    const siteId = this.currentSiteId;
+    return siteId ? `/sites/${siteId}` : '/admin/sites';
   }
 
   ngOnInit() {
-    const user = this.auth.user();
-    if (user) {
-      const siteId = user.siteId === '*' ? '_' : user.siteId;
+    const siteId = this.currentSiteId;
+    if (siteId) {
       this.contentApi.getTypes(siteId).subscribe({
         next: res => this.contentTypes.set(res.types.filter(t => t.slug !== 'site-settings')),
-        error: () => {} // silently fail if no content types
+        error: () => {}
       });
     }
   }
