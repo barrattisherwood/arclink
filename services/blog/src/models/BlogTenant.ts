@@ -2,6 +2,7 @@ import { Schema, model, Document } from 'mongoose';
 
 export interface IBlogTenant extends Document {
   id: string;
+  siteId: string;
   api_key: string;
   name: string;
   allowed_origin: string;
@@ -22,6 +23,7 @@ export interface IBlogTenant extends Document {
 
 const BlogTenantSchema = new Schema<IBlogTenant>({
   id: { type: String, required: true, unique: true },
+  siteId: { type: String, default: '' },
   api_key: { type: String, required: true },
   name: { type: String, required: true },
   allowed_origin: { type: String, required: true },

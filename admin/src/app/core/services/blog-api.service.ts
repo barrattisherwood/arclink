@@ -105,6 +105,12 @@ export class BlogApiService {
     );
   }
 
+  checkTenant(siteId: string) {
+    return this.http.get<{ exists: boolean; tenantId?: string }>(
+      `${this.base}/tenant/${siteId}`
+    );
+  }
+
   uploadImage(postId: string, image: string, alt?: string) {
     return this.http.post<{ post: Post }>(
       `${this.base}/posts/${this.tenantId}/${postId}/upload-image`, { image, alt }, { headers: this.headers }
