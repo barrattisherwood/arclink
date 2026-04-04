@@ -1,5 +1,6 @@
 import { Routes } from '@angular/router';
 import { authGuard, superAdminGuard } from './core/guards/auth.guard';
+import { blogTenantResolver } from './core/guards/blog-tenant.resolver';
 
 export const routes: Routes = [
   {
@@ -10,6 +11,7 @@ export const routes: Routes = [
     path: 'sites/:siteId',
     loadComponent: () => import('./shared/layout/shell.component').then(m => m.ShellComponent),
     canActivate: [authGuard],
+    resolve: { blogTenant: blogTenantResolver },
     children: [
       { path: '', redirectTo: 'blog', pathMatch: 'full' },
       {
