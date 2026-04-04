@@ -21,9 +21,15 @@ const ALLOWED_ORIGINS = [
   'http://localhost:3000',
 ];
 
+function isAllowedOrigin(origin: string): boolean {
+  if (ALLOWED_ORIGINS.includes(origin)) return true;
+  if (/\.vercel\.app$/.test(origin)) return true;
+  return false;
+}
+
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin && ALLOWED_ORIGINS.includes(origin)) {
+  if (origin && isAllowedOrigin(origin)) {
     res.setHeader('Access-Control-Allow-Origin', origin);
   }
   res.setHeader('Access-Control-Allow-Methods', 'GET,POST,PATCH,DELETE,OPTIONS');
@@ -38,9 +44,13 @@ app.use((req, res, next) => {
 app.use(express.json({ limit: '5mb' }));
 
 app.use('/sites', sitesRouter);
+app.use('/api/sites', sitesRouter);
 app.use('/types/:siteId', typesRouter);
+app.use('/api/types/:siteId', typesRouter);
 app.use('/entries/:siteId', entriesRouter);
+app.use('/api/entries/:siteId', entriesRouter);
 app.use('/upload/:siteId', uploadRouter);
+app.use('/api/upload/:siteId', uploadRouter);
 
 app.get('/health', (_, res) => res.json({ status: 'ok', service: 'content' }));
 

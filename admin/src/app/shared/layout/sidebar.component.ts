@@ -1,7 +1,8 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
-import { RouterLink, RouterLinkActive } from '@angular/router';
+import { RouterLink, RouterLinkActive, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ContentApiService } from '../../core/services/content-api.service';
+import { BlogApiService } from '../../core/services/blog-api.service';
 import { ContentType } from '../../models/content-type.model';
 
 @Component({
@@ -17,6 +18,7 @@ import { ContentType } from '../../models/content-type.model';
 
       <nav class="flex-1 overflow-y-auto py-3 px-2">
         <!-- Blog -->
+        @if (hasBlog()) {
         <div class="mb-4">
           <p class="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-[#555]">Blog</p>
           <a [routerLink]="siteBase() + '/blog'"
@@ -33,6 +35,7 @@ import { ContentType } from '../../models/content-type.model';
              routerLinkActive="bg-[#1a1a1a] text-white"
              class="nav-link">Published</a>
         </div>
+        }
 
         <!-- Content (dynamic from API) -->
         @if (contentTypes().length > 0) {
@@ -93,22 +96,31 @@ import { ContentType } from '../../models/content-type.model';
 export class SidebarComponent implements OnInit {
   auth = inject(AuthService);
   private contentApi = inject(ContentApiService);
+  private blogApi = inject(BlogApiService);
+  private route = inject(ActivatedRoute);
 
   contentTypes = signal<ContentType[]>([]);
+  hasBlog = signal(false);
+
+  private get currentSiteId(): string | null {
+    return this.route.snapshot.paramMap.get('siteId');
+  }
 
   siteBase(): string {
-    const user = this.auth.user();
-    if (!user) return '/sites/_';
-    return user.siteId === '*' ? '/sites/_' : `/sites/${user.siteId}`;
+    const siteId = this.currentSiteId;
+    return siteId ? `/sites/${siteId}` : '/admin/sites';
   }
 
   ngOnInit() {
-    const user = this.auth.user();
-    if (user) {
-      const siteId = user.siteId === '*' ? '_' : user.siteId;
+    const siteId = this.currentSiteId;
+    if (siteId) {
       this.contentApi.getTypes(siteId).subscribe({
         next: res => this.contentTypes.set(res.types.filter(t => t.slug !== 'site-settings')),
-        error: () => {} // silently fail if no content types
+        error: () => {}
+      });
+      this.blogApi.checkTenant(siteId).subscribe({
+        next: res => this.hasBlog.set(res.exists),
+        error: () => this.hasBlog.set(false),
       });
     }
   }

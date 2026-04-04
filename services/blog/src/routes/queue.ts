@@ -17,10 +17,12 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
   const { tenantId } = req.params;
 
   const body = req.body as
-    | { title: string; notes?: string }
-    | { titles: Array<{ title: string; notes?: string }> };
+    | { title: string; notes?: string; persona_tag?: string }
+    | { titles: Array<{ title: string; notes?: string; persona_tag?: string }> };
 
-  const entries = 'titles' in body ? body.titles : [{ title: body.title, notes: (body as { notes?: string }).notes }];
+  const entries = 'titles' in body
+    ? body.titles
+    : [{ title: body.title, notes: body.notes, persona_tag: body.persona_tag }];
 
   if (!entries.length || entries.some(e => !e.title)) {
     res.status(400).json({ error: 'Each entry must have a title' });
@@ -37,6 +39,7 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
       tenant_id: tenantId,
       title: e.title,
       notes: e.notes ?? null,
+      persona_tag: e.persona_tag ?? null,
       priority: nextPriority++,
     }))
   );

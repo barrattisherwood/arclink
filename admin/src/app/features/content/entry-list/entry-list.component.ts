@@ -103,8 +103,7 @@ export class EntryListComponent implements OnInit, OnDestroy {
   deleting = signal('');
 
   private get siteId(): string {
-    const user = this.auth.user();
-    return user?.siteId === '*' ? '_' : user?.siteId || '_';
+    return this.route.snapshot.parent?.paramMap.get('siteId') || this.auth.user()?.siteId || '';
   }
 
   private get typeSlug(): string {

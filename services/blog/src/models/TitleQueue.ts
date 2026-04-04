@@ -6,7 +6,7 @@ export interface ITitleQueue extends Document {
   title: string;
   priority: number;
   notes: string | null;
-  persona: string | null;
+  persona_tag: string | null;
   created_at: Date;
 }
 
@@ -16,7 +16,7 @@ const TitleQueueSchema = new Schema<ITitleQueue>({
   title: { type: String, required: true },
   priority: { type: Number, required: true, default: 0 },
   notes: { type: String, default: null },
-  persona: { type: String, default: null },
+  persona_tag: { type: String, default: null },
   created_at: { type: Date, required: true, default: Date.now },
 });
 
