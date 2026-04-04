@@ -92,6 +92,7 @@ async function update(): Promise<void> {
     ['kwagga', KWAGGA_PROMPT],
     ['marcus', MARCUS_PROMPT],
   ]);
+  tenant.siteId = 'betwise-rugby';
 
   await tenant.save();
 

@@ -132,6 +132,7 @@ async function seed(): Promise<void> {
     ]),
 
     blog_canonical_base: 'https://www.sarugbybets.co.za',
+    siteId: 'betwise-rugby',
     created_at: new Date(),
   });
 
