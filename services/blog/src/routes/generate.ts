@@ -56,7 +56,10 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
 
   const generated = await generatePost(tenant, next.title, recentTitles, personaTag);
 
-  const featured_image = await fetchUnsplashImage(generated.unsplash_keyword, generated.alt_text);
+  const featured_image = await fetchUnsplashImage(
+    generated.unsplash_keyword,
+    generated.alt_text || next.title,
+  );
 
   const base = makeSlug(next.title);
   const slug = await uniqueSlug(tenantId, base);
