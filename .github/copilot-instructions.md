@@ -30,7 +30,12 @@ railway run npx ts-node src/scripts/your-script.ts
 
 `railway run` injects all private environment variables (including `MONGODB_URI` pointing to the internal private hostname) automatically.
 
-If `railway run` fails with a DNS or connection error for the internal hostname (`mongodb.railway.internal`), **do not fall back to the public URI**. Flag the issue to the developer — the script should be run as a Railway job instead.
+**If `railway run` fails with a DNS or connection error for `mongodb.railway.internal`:**
+- **Stop. Do not fall back to the public URI under any circumstances.**
+- Tell the developer: "`railway run` failed with a DNS error on the internal hostname. The script needs to be run as a Railway job, or the public networking needs to be temporarily enabled by the developer themselves."
+- The developer must make that decision — the agent must not make it unilaterally.
+
+A git pre-commit hook is in place that will block any commit containing `rlwy.net` or `MONGO_PUBLIC_URL`.
 
 ---
 
