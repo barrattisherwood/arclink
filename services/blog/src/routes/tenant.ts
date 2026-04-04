@@ -67,4 +67,31 @@ router.patch('/:tenantId/site-id', async (req: Request, res: Response): Promise<
   res.json({ ok: true, tenantId: tenant.id, siteId: tenant.siteId });
 });
 
+// PATCH /tenant/:tenantId/settings — super-admin: update tenant settings
+router.patch('/:tenantId/settings', async (req: Request, res: Response): Promise<void> => {
+  if (!isSuperAdmin(req)) {
+    res.status(401).json({ error: 'Unauthorised' });
+    return;
+  }
+
+  const allowed = ['blog_images_enabled', 'siteId', 'blog_cadence', 'blog_word_count'];
+  const updates: Record<string, unknown> = {};
+  for (const key of allowed) {
+    if (key in req.body) updates[key] = (req.body as Record<string, unknown>)[key];
+  }
+
+  const tenant = await BlogTenant.findOneAndUpdate(
+    { id: req.params.tenantId },
+    updates,
+    { new: true },
+  );
+
+  if (!tenant) {
+    res.status(404).json({ error: 'Tenant not found' });
+    return;
+  }
+
+  res.json({ ok: true, tenantId: tenant.id, blog_images_enabled: tenant.blog_images_enabled });
+});
+
 export default router;
