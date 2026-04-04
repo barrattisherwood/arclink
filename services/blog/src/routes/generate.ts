@@ -3,9 +3,10 @@ import { randomUUID } from 'crypto';
 import slugify from 'slugify';
 import { requireAuth } from '../middleware/auth';
 import { Post } from '../models/Post';
-import { TitleQueue } from '../models/TitleQueue';
+import { TitleQueue, ITitleQueue } from '../models/TitleQueue';
 import { generatePost } from '../services/claude';
 import { fetchUnsplashImage } from '../services/unsplash';
+import { IBlogTenant } from '../models/BlogTenant';
 
 const router = Router({ mergeParams: true });
 
@@ -41,7 +42,8 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
 
   const recentTitles = recentPosts.map(p => p.title);
 
-  const generated = await generatePost(tenant, next.title, recentTitles);
+  const persona = resolvePersona(tenant, next);
+  const generated = await generatePost(tenant, next.title, recentTitles, persona);
 
   const featured_image = await fetchUnsplashImage(generated.unsplash_keyword, generated.alt_text);
 
@@ -76,5 +78,16 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
 
   res.status(201).json({ post });
 });
+
+function resolvePersona(tenant: IBlogTenant, queueItem: ITitleQueue): string | undefined {
+  const personas = Array.from(tenant.blog_persona_prompts?.keys() ?? []);
+  if (personas.length === 0) return undefined;
+
+  if (queueItem.persona && tenant.blog_persona_prompts?.has(queueItem.persona)) {
+    return queueItem.persona;
+  }
+
+  return personas[Math.floor(Math.random() * personas.length)];
+}
 
 export default router;

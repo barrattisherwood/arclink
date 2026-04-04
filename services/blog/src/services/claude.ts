@@ -23,7 +23,12 @@ export async function generatePost(
   tenant: IBlogTenant,
   title: string,
   recentTitles: string[],
+  personaTag?: string,
 ): Promise<GeneratedPost> {
+  if (personaTag && tenant.blog_persona_prompts?.has(personaTag)) {
+    return generatePersonaPost(tenant, title, personaTag, recentTitles);
+  }
+
   const tagInstruction = tenant.blog_predefined_tags.length > 0
     ? `Choose 3–5 tags from this list where relevant, but you may add new ones if needed: ${tenant.blog_predefined_tags.join(', ')}.`
     : 'Generate 3–5 relevant tags for this post.';
@@ -103,6 +108,93 @@ ${categoryInstruction}`;
     unsplash_keyword: meta.unsplash_keyword,
     alt_text: meta.alt_text,
   };
+}
+
+async function generatePersonaPost(
+  tenant: IBlogTenant,
+  title: string,
+  personaTag: string,
+  recentTitles: string[],
+): Promise<GeneratedPost> {
+  const systemPrompt = tenant.blog_persona_prompts.get(personaTag)!;
+  const userMessage = buildPersonaUserMessage(tenant, title, personaTag, recentTitles);
+
+  const message = await client.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 4096,
+    system: systemPrompt,
+    messages: [{ role: 'user', content: userMessage }],
+  });
+
+  const raw = message.content[0].type === 'text' ? message.content[0].text : '';
+  const jsonMatch = raw.match(/```json\s*([\s\S]*?)```/);
+  if (!jsonMatch) throw new Error('Claude did not return expected JSON block');
+
+  const meta = JSON.parse(jsonMatch[1]) as {
+    seo_title: string;
+    seo_description: string;
+    excerpt: string;
+    categories: string[];
+    tags: string[];
+    unsplash_keyword: string;
+    alt_text: string;
+  };
+
+  const content = raw.slice(0, raw.lastIndexOf('```json')).trim();
+
+  return {
+    content,
+    excerpt: meta.excerpt,
+    seo_title: meta.seo_title || title.slice(0, 60),
+    seo_description: meta.seo_description || meta.excerpt.slice(0, 155),
+    categories: meta.categories || [],
+    tags: meta.tags,
+    unsplash_keyword: meta.unsplash_keyword,
+    alt_text: meta.alt_text,
+  };
+}
+
+function buildPersonaUserMessage(
+  tenant: IBlogTenant,
+  title: string,
+  personaTag: string,
+  recentTitles: string[],
+): string {
+  const tagInstruction = tenant.blog_predefined_tags.length > 0
+    ? `Choose tags from this list where relevant, and always include '${personaTag}': ${tenant.blog_predefined_tags.join(', ')}.`
+    : `Generate 3–5 relevant tags and always include '${personaTag}'.`;
+
+  const categoryInstruction = tenant.blog_predefined_categories?.length > 0
+    ? `Choose 1–2 categories from this list: ${tenant.blog_predefined_categories.join(', ')}.`
+    : 'Assign 1–2 broad topic categories.';
+
+  const recentSection = recentTitles.length > 0
+    ? `\nRecent posts (avoid overlap, look for internal linking opportunities):\n${recentTitles.map(t => `- ${t}`).join('\n')}\n`
+    : '';
+
+  return `Write a rugby betting analysis piece with the following title:
+
+"${title}"
+
+- Site: ${tenant.name} (${tenant.blog_canonical_base})
+- Audience: ${tenant.blog_audience}
+- Target word count: approximately ${tenant.blog_word_count} words
+${recentSection}
+Write the full article in markdown. Do not include the title as an H1 — start directly with the introduction.
+
+After the article, output a JSON block (fenced with \`\`\`json) with this exact structure:
+{
+  "seo_title": "SERP-optimised title, max 60 characters",
+  "seo_description": "Meta description, max 155 characters",
+  "excerpt": "2–3 sentence preview for article cards, max 300 characters",
+  "categories": ["Category1"],
+  "tags": ["${personaTag}", "tag2", "tag3"],
+  "unsplash_keyword": "2–3 word search term for a relevant Unsplash photo",
+  "alt_text": "descriptive alt text for the featured image"
+}
+
+${tagInstruction}
+${categoryInstruction}`;
 }
 
 export interface TitleSuggestion {

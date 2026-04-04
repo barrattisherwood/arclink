@@ -10,7 +10,8 @@ export type FieldType =
   | 'coordinates'
   | 'boolean'
   | 'select'
-  | 'date';
+  | 'date'
+  | 'tags';
 
 export interface IFieldDefinition {
   key: string;

@@ -1,6 +1,6 @@
 export type FieldType =
   | 'text' | 'richtext' | 'url' | 'image' | 'images'
-  | 'video_url' | 'coordinates' | 'boolean' | 'select' | 'date';
+  | 'video_url' | 'coordinates' | 'boolean' | 'select' | 'date' | 'tags';
 
 export interface FieldDefinition {
   key: string;

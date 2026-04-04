@@ -127,6 +127,14 @@ import { ContentEntry } from '../../../models/content-entry.model';
               @case ('date') {
                 <input type="date" [(ngModel)]="formData[field.key]" class="field-input">
               }
+              @case ('tags') {
+                <input type="text"
+                       [ngModel]="(formData[field.key] || []).join(', ')"
+                       (ngModelChange)="setTags(field.key, $event)"
+                       placeholder="e.g. hollywoodbets, betway, 10bet"
+                       class="field-input">
+                <p class="text-[10px] text-[#555] mt-1">Comma-separated values</p>
+              }
             }
           </div>
         }
@@ -228,6 +236,7 @@ export class EntryFormComponent implements OnInit {
           type.fields.forEach(f => {
             if (f.type === 'boolean') this.formData[f.key] = false;
             else if (f.type === 'images') this.formData[f.key] = [];
+            else if (f.type === 'tags') this.formData[f.key] = [];
             else if (f.type === 'coordinates') this.formData[f.key] = { lat: 0, lng: 0 };
             else this.formData[f.key] = '';
           });
@@ -241,6 +250,10 @@ export class EntryFormComponent implements OnInit {
   setCoord(key: string, axis: 'lat' | 'lng', value: number) {
     if (!this.formData[key]) this.formData[key] = { lat: 0, lng: 0 };
     this.formData[key] = { ...this.formData[key], [axis]: value };
+  }
+
+  setTags(key: string, value: string) {
+    this.formData[key] = value.split(',').map(t => t.trim()).filter(t => t.length > 0);
   }
 
   uploadImage(event: Event, key: string) {
