@@ -1,16 +1,26 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
+import { tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
 import { Post, QueueItem, TitleSuggestion } from '../../models/blog.model';
+import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class BlogApiService {
   private http = inject(HttpClient);
+  private auth = inject(AuthService);
   private base = environment.blogApiUrl;
   private tenantId = environment.blogTenantId;
 
+  setActiveTenant(tenantId: string): void {
+    this.tenantId = tenantId;
+  }
+
   private get headers(): HttpHeaders {
-    return new HttpHeaders({ 'x-api-key': environment.blogApiKey });
+    const token = this.auth.getToken();
+    return token
+      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
+      : new HttpHeaders();
   }
 
   // Queue
@@ -108,6 +118,8 @@ export class BlogApiService {
   checkTenant(siteId: string) {
     return this.http.get<{ exists: boolean; tenantId?: string }>(
       `${this.base}/tenant/${siteId}`
+    ).pipe(
+      tap(res => { if (res.tenantId) this.setActiveTenant(res.tenantId); })
     );
   }
 
