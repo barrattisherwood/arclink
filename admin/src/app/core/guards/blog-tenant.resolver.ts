@@ -1,6 +1,6 @@
 import { inject } from '@angular/core';
 import { ResolveFn } from '@angular/router';
-import { catchError, of } from 'rxjs';
+import { catchError, map, of } from 'rxjs';
 import { BlogApiService } from '../services/blog-api.service';
 
 export const blogTenantResolver: ResolveFn<boolean> = (route) => {
@@ -10,6 +10,7 @@ export const blogTenantResolver: ResolveFn<boolean> = (route) => {
   return inject(BlogApiService)
     .checkTenant(siteId)
     .pipe(
-      catchError(() => of({ exists: false })),
-    ) as ReturnType<typeof of<boolean>>;
+      map(res => res.exists),
+      catchError(() => of(false)),
+    );
 };

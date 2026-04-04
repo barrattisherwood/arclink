@@ -16,7 +16,7 @@ export class FormsApiService {
   private base = environment.formsApiUrl;
 
   private get headers(): HttpHeaders {
-    return new HttpHeaders({ 'x-api-key': environment.blogApiKey });
+    return new HttpHeaders();
   }
 
   getSubmissions(tenantId: string, params?: { limit?: number; offset?: number }) {
