@@ -74,7 +74,7 @@ router.patch('/:tenantId/settings', async (req: Request, res: Response): Promise
     return;
   }
 
-  const allowed = ['blog_images_enabled', 'siteId', 'blog_cadence', 'blog_word_count'];
+  const allowed = ['blog_images_enabled', 'siteId', 'blog_cadence', 'blog_word_count', 'sport_key', 'sport_label'];
   const updates: Record<string, unknown> = {};
   for (const key of allowed) {
     if (key in req.body) updates[key] = (req.body as Record<string, unknown>)[key];
