@@ -36,7 +36,7 @@ export class BlogApiService {
     );
   }
 
-  addToQueue(titles: string[]) {
+  addToQueue(titles: Array<{ title: string; persona_tag?: string }>) {
     return this.http.post<{ items: QueueItem[] }>(
       `${this.base}/queue/${this.tenantId}`, { titles }, { headers: this.headers }
     );

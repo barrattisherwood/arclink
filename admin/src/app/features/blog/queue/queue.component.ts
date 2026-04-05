@@ -40,10 +40,18 @@ import { TitleSuggestion, QueueItem } from '../../../models/blog.model';
         }
 
         @if (selected().size > 0) {
-          <button (click)="addSelected()"
-                  class="mt-3 w-full py-2 text-xs rounded-md bg-[#1a1a1a] hover:bg-[#222] text-white cursor-pointer transition-colors">
-            Add {{ selected().size }} to Queue
-          </button>
+          <div class="mt-3 flex items-center gap-2">
+            <select [(ngModel)]="selectedPersona"
+                    class="flex-1 px-2 py-1.5 text-xs rounded-md bg-[#1a1a1a] border border-[#2a2a2a] text-white cursor-pointer">
+              <option value="">No persona (standard)</option>
+              <option value="kwagga">Kwagga van der Berg</option>
+              <option value="marcus">Marcus Webb</option>
+            </select>
+            <button (click)="addSelected()"
+                    class="px-3 py-1.5 text-xs rounded-md bg-[#1a1a1a] hover:bg-[#222] text-white cursor-pointer transition-colors whitespace-nowrap">
+              Add {{ selected().size }} to Queue
+            </button>
+          </div>
         }
       </div>
 
@@ -79,6 +87,9 @@ import { TitleSuggestion, QueueItem } from '../../../models/blog.model';
           <div class="flex items-center gap-3 p-3 rounded-md hover:bg-[#1a1a1a] group mb-1 transition-colors">
             <span class="text-xs text-[#555] w-5 text-right">{{ i + 1 }}</span>
             <span class="text-sm text-white flex-1">{{ item.title }}</span>
+            @if (item.persona_tag) {
+              <span class="text-xs px-1.5 py-0.5 rounded bg-blue-900/40 text-blue-300 capitalize">{{ item.persona_tag }}</span>
+            }
             <button (click)="remove(item.id)"
                     class="text-xs text-[#555] hover:text-red-400 opacity-0 group-hover:opacity-100 cursor-pointer transition-all">
               Remove
@@ -95,6 +106,7 @@ export class QueueComponent implements OnInit {
 
   suggestions = signal<TitleSuggestion[]>([]);
   selected = signal<Set<string>>(new Set());
+  selectedPersona = '';
   queue = signal<QueueItem[]>([]);
   reasoning = signal('');
   loading = signal(false);
@@ -131,12 +143,14 @@ export class QueueComponent implements OnInit {
   }
 
   addSelected() {
-    const titles = [...this.selected()];
+    const persona = this.selectedPersona || undefined;
+    const titleStrings = [...this.selected()];
+    const titles = titleStrings.map(title => ({ title, ...(persona ? { persona_tag: persona } : {}) }));
     this.api.addToQueue(titles).subscribe({
       next: res => {
         this.queue.set(res.items);
         this.selected.set(new Set());
-        this.suggestions.update(s => s.filter(x => !titles.includes(x.title)));
+        this.suggestions.update(s => s.filter(x => !titleStrings.includes(x.title)));
         this.toast.success(`Added ${titles.length} to queue`);
       },
       error: () => this.toast.error('Failed to add to queue')

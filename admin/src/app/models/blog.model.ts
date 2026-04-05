@@ -8,7 +8,14 @@ export interface QueueItem {
   title: string;
   priority: number;
   notes: string | null;
+  persona_tag: string | null;
   created_at: string;
+}
+
+export interface DialogueBlock {
+  persona: string;
+  content: string;
+  order: number;
 }
 
 export interface Post {
@@ -28,6 +35,8 @@ export interface Post {
   published_at: string | null;
   created_at: string;
   content?: string;
+  article_format?: 'standard' | 'dialogue';
+  dialogue_blocks?: DialogueBlock[];
   featured_image: {
     url: string;
     alt: string;

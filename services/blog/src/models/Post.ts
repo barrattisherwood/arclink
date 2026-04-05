@@ -10,6 +10,12 @@ export interface IFeaturedImage {
   } | null;
 }
 
+export interface IDialogueBlock {
+  persona: string;
+  content: string;
+  order: number;
+}
+
 export interface IPost extends Document {
   id: string;
   tenant_id: string;
@@ -28,6 +34,8 @@ export interface IPost extends Document {
   featured_image: IFeaturedImage | null;
   word_count: number;
   generated: boolean;
+  article_format: 'standard' | 'dialogue';
+  dialogue_blocks: IDialogueBlock[];
   created_at: Date;
 }
 
@@ -63,6 +71,15 @@ const PostSchema = new Schema<IPost>({
   reading_time: { type: Number, default: 0 },
   word_count: { type: Number, required: true, default: 0 },
   generated: { type: Boolean, required: true, default: false },
+  article_format: { type: String, enum: ['standard', 'dialogue'], default: 'standard' },
+  dialogue_blocks: {
+    type: [{
+      persona: { type: String, required: true },
+      content: { type: String, required: true },
+      order: { type: Number, required: true },
+    }],
+    default: [],
+  },
   created_at: { type: Date, required: true, default: Date.now },
 });
 

@@ -42,6 +42,9 @@ import { Post } from '../../../models/blog.model';
               @if (post.generated) {
                 <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-900/40 text-purple-300">AI</span>
               }
+              @if (post.article_format === 'dialogue') {
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-900/40 text-blue-300">Dialogue</span>
+              }
               @for (tag of post.tags.slice(0, 3); track tag) {
                 <span class="text-[10px] text-[#555]">#{{ tag }}</span>
               }

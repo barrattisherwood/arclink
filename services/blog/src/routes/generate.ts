@@ -6,6 +6,7 @@ import { Post } from '../models/Post';
 import { TitleQueue } from '../models/TitleQueue';
 import { generatePost } from '../services/claude';
 import { fetchUnsplashImage } from '../services/unsplash';
+import { parseDialogueContent } from '../utils/dialogue-parser';
 
 const router = Router({ mergeParams: true });
 
@@ -63,14 +64,12 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
   const base = makeSlug(next.title);
   const slug = await uniqueSlug(tenantId, base);
   const word_count = generated.content.trim().split(/\s+/).length;
-
   const reading_time = Math.ceil(word_count / 200);
 
-  // Ensure the persona tag is included in the post tags (used for byline routing)
   const tags = generated.tags;
-  if (personaTag && !tags.includes(personaTag)) {
-    tags.push(personaTag);
-  }
+  if (personaTag && !tags.includes(personaTag)) tags.push(personaTag);
+
+  const parsed = personaTag ? parseDialogueContent(generated.content) : { isValid: false, blocks: [] };
 
   const post = await Post.create({
     id: randomUUID(),
@@ -90,6 +89,8 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
     featured_image,
     word_count,
     generated: true,
+    article_format: parsed.isValid ? 'dialogue' : 'standard',
+    dialogue_blocks: parsed.isValid ? parsed.blocks : [],
   });
 
   // Remove from queue

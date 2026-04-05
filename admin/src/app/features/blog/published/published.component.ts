@@ -41,6 +41,9 @@ import { Post } from '../../../models/blog.model';
           <span class="text-[10px] text-[#555] shrink-0">{{ post.published_at | date:'MMM d, y' }}</span>
           <span class="text-[10px] text-[#555] shrink-0">{{ post.word_count }}w</span>
           <span class="text-[10px] text-[#555] shrink-0 max-w-[120px] truncate">/{{ post.slug }}</span>
+          @if (post.article_format === 'dialogue') {
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-900/40 text-blue-300 shrink-0">Dialogue</span>
+          }
 
           @for (tag of post.tags.slice(0, 4); track tag) {
             <span class="text-[10px] text-[#555] shrink-0">#{{ tag }}</span>

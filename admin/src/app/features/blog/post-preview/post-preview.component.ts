@@ -50,6 +50,9 @@ import { Post } from '../../../models/blog.model';
         @if (p.generated) {
           <span class="text-[10px] px-1.5 py-0.5 rounded bg-purple-900/40 text-purple-300">AI Generated</span>
         }
+        @if (p.article_format === 'dialogue') {
+          <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-900/40 text-blue-300">Dialogue</span>
+        }
         <span class="text-[10px] px-1.5 py-0.5 rounded"
               [class]="p.status === 'draft' ? 'bg-yellow-900/40 text-yellow-300' : 'bg-green-900/40 text-green-300'">
           {{ p.status }}
@@ -108,9 +111,32 @@ import { Post } from '../../../models/blog.model';
       </div>
 
       <!-- Content -->
-      <div class="bg-[#111] rounded-lg border border-[#1a1a1a] p-6 mb-4 prose-dark"
-           [innerHTML]="renderedContent()">
-      </div>
+      @if (p.article_format === 'dialogue' && p.dialogue_blocks?.length) {
+        <div class="mb-4 space-y-3">
+          @for (block of p.dialogue_blocks; track block.order) {
+            <div class="rounded-lg border border-[#1a1a1a] overflow-hidden"
+                 [class]="block.persona === 'kwagga' ? 'border-l-4 border-l-blue-600' : 'border-l-4 border-l-orange-500'">
+              <div class="flex items-center gap-3 px-4 py-3 bg-[#111] border-b border-[#1a1a1a]">
+                <div class="w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold"
+                     [class]="block.persona === 'kwagga' ? 'bg-blue-900/50 text-blue-300' : 'bg-orange-900/50 text-orange-300'">
+                  {{ block.persona === 'kwagga' ? 'DV' : 'MW' }}
+                </div>
+                <div>
+                  <p class="text-xs font-semibold text-white">{{ block.persona === 'kwagga' ? 'Kwagga van der Berg' : 'Marcus Webb' }}</p>
+                  <p class="text-[10px]" [class]="block.persona === 'kwagga' ? 'text-blue-400' : 'text-orange-400'">
+                    {{ block.persona === 'kwagga' ? 'SA rugby correspondent' : 'Rugby tactics & markets' }}
+                  </p>
+                </div>
+              </div>
+              <div class="bg-[#111] px-4 py-4 prose-dark text-sm" [innerHTML]="renderBlock(block.content)"></div>
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="bg-[#111] rounded-lg border border-[#1a1a1a] p-6 mb-4 prose-dark"
+             [innerHTML]="renderedContent()">
+        </div>
+      }
 
       <!-- Actions -->
       <div class="flex gap-3">
@@ -248,5 +274,9 @@ export class PostPreviewComponent implements OnInit {
       .replace(/^(?!<[hul])/gm, '<p>')
       .replace(/(?<![>])$/gm, '</p>')
       .replace(/<p><\/p>/g, '');
+  }
+
+  renderBlock(content: string): string {
+    return this.markdownToHtml(content);
   }
 }

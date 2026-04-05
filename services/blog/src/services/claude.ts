@@ -3,6 +3,100 @@ import { IBlogTenant } from '../models/BlogTenant';
 
 const client = new Anthropic();
 
+function buildStandardUserMessage(tenant: IBlogTenant, title: string, recentTitles: string[]): string {
+  const tagInstruction = tenant.blog_predefined_tags.length > 0
+    ? `Choose 3–5 tags from this list where relevant, but you may add new ones if needed: ${tenant.blog_predefined_tags.join(', ')}.`
+    : 'Generate 3–5 relevant tags for this post.';
+
+  const categoryInstruction = tenant.blog_predefined_categories?.length > 0
+    ? `Choose 1–2 categories from this list: ${tenant.blog_predefined_categories.join(', ')}.`
+    : 'Assign 1–2 broad topic categories for this post.';
+
+  return `You are a professional blog writer and SEO specialist. Write a high-quality blog post for the following brief.
+
+Blog subject: ${tenant.blog_subject}
+Target audience: ${tenant.blog_audience}
+Tone: ${tenant.blog_tone}
+Target word count: approximately ${tenant.blog_word_count} words
+Post title: ${title}
+
+${recentTitles.length > 0 ? `Recent posts (avoid overlap):\n${recentTitles.map(t => `- ${t}`).join('\n')}` : ''}
+
+Write the full blog post in markdown. Do not include the title as an H1 — start directly with the introduction.
+
+After the post, output a JSON block (fenced with \`\`\`json) with this exact structure:
+{
+  "seo_title": "SERP-optimised title, max 60 characters",
+  "seo_description": "Meta description, max 155 characters",
+  "excerpt": "2–3 sentence preview, max 300 chars",
+  "categories": ["Category1"],
+  "tags": ["tag1", "tag2", "tag3"],
+  "unsplash_keyword": "2–3 word Unsplash search term",
+  "alt_text": "descriptive alt text for the featured image"
+}
+
+${tagInstruction}
+${categoryInstruction}`;
+}
+
+function buildDialogueUserMessage(
+  tenant: IBlogTenant,
+  title: string,
+  personaTag: string,
+  recentTitles: string[],
+): string {
+  const allPersonas = Array.from(tenant.blog_persona_prompts?.keys() ?? []);
+  const otherPersona = allPersonas.find(p => p !== personaTag) ?? null;
+
+  const tagInstruction = tenant.blog_predefined_tags.length > 0
+    ? `Choose 3–5 tags from this list where relevant: ${tenant.blog_predefined_tags.join(', ')}.`
+    : 'Generate 3–5 relevant tags for this post.';
+
+  return `Write a rugby betting analysis article with the following title:
+
+"${title}"
+
+${recentTitles.length > 0 ? `Recent articles (avoid overlap):\n${recentTitles.map(t => `- ${t}`).join('\n')}` : ''}
+
+FORMAT — CRITICAL:
+This is a dialogue-format article. Two analysts take turns. Use these exact delimiters:
+
+[KWAGGA]
+...Kwagga's analysis here...
+[/KWAGGA]
+
+[MARCUS]
+...Marcus's analysis here...
+[/MARCUS]
+
+Structure:
+1. [KWAGGA] opens with set piece / conditions angle (200–250 words)
+2. [MARCUS] responds with tactical / market angle, references Kwagga's point (200–250 words)
+3. [KWAGGA] closes with final bookmaker recommendation (80–100 words)
+
+Rules:
+- Each block stays fully in that persona's voice (defined in your system prompt)
+- Marcus may agree or push back on Kwagga — genuine dialogue, not just two monologues
+- Each block must include a "Bet at [Bookmaker]" CTA referencing a specific SA bookmaker
+- Never break the delimiter format — the frontend parser depends on it
+- Do not add any text outside the delimiters (no intro paragraph, no conclusion)
+
+After all dialogue blocks, output a JSON block (fenced with \`\`\`json):
+{
+  "seo_title": "SERP-optimised title, max 60 characters",
+  "seo_description": "Meta description, max 155 characters",
+  "excerpt": "One sentence summary of the fixture and key angle, max 200 chars",
+  "categories": ["Fixture Previews"],
+  "tags": ["${personaTag}"${otherPersona ? `, "${otherPersona}"` : ''}, "urc", "fixture-preview"],
+  "unsplash_keyword": "south africa rugby",
+  "alt_text": "${title}"
+}
+
+${tagInstruction}
+Site: ${tenant.name}
+Audience: ${tenant.blog_audience}`;
+}
+
 export interface GeneratedPost {
   content: string;
   excerpt: string;
@@ -25,53 +119,11 @@ export async function generatePost(
   recentTitles: string[],
   personaTag?: string | null,
 ): Promise<GeneratedPost> {
-  const tagInstruction = tenant.blog_predefined_tags.length > 0
-    ? `Choose 3–5 tags from this list where relevant, but you may add new ones if needed: ${tenant.blog_predefined_tags.join(', ')}.`
-    : 'Generate 3–5 relevant tags for this post.';
-
-  const categoryInstruction = tenant.blog_predefined_categories?.length > 0
-    ? `Choose 1–2 categories from this list: ${tenant.blog_predefined_categories.join(', ')}.`
-    : 'Assign 1–2 broad topic categories for this post (e.g. "Strategy", "Technology", "Growth").';
-
-  const prompt = `You are a professional blog writer and SEO specialist. Write a high-quality blog post for the following brief.
-
-Blog subject: ${tenant.blog_subject}
-Target audience: ${tenant.blog_audience}
-Tone: ${tenant.blog_tone}
-Target word count: approximately ${tenant.blog_word_count} words
-Post title: ${title}
-
-${recentTitles.length > 0 ? `Recent posts (avoid overlap, look for internal linking opportunities):\n${recentTitles.map(t => `- ${t}`).join('\n')}` : ''}
-
-Write the full blog post in markdown. Do not include the title as an H1 — start directly with the introduction.
-
-After the post, output a JSON block (fenced with \`\`\`json) with this exact structure:
-{
-  "seo_title": "SERP-optimised title, max 60 characters — concise, includes primary keyword, may differ from the post title",
-  "seo_description": "Meta description for search results, max 155 characters — includes primary keyword, has a clear value proposition or call-to-action",
-  "excerpt": "A 2–3 sentence preview for blog listing cards (max 300 chars) — engaging summary that makes people want to read more",
-  "categories": ["Category1"],
-  "tags": ["tag1", "tag2", "tag3"],
-  "unsplash_keyword": "a short 2–3 word search term for a relevant Unsplash photo",
-  "alt_text": "descriptive alt text for the featured image"
-}
-
-SEO title guidelines:
-- Must be under 60 characters (Google truncates at ~60)
-- Include the primary keyword near the front
-- Make it compelling for click-through in search results
-- Can differ from the post title if the post title is too long or not SERP-friendly
-
-Meta description guidelines:
-- Must be under 155 characters (Google truncates at ~155-160)
-- Include the primary keyword naturally
-- End with a value proposition or subtle CTA
-- Should read as a complete thought, not a truncated sentence
-
-${tagInstruction}
-${categoryInstruction}`;
-
   const personaPrompt = personaTag && tenant.blog_persona_prompts?.get(personaTag);
+
+  const prompt = personaTag
+    ? buildDialogueUserMessage(tenant, title, personaTag, recentTitles)
+    : buildStandardUserMessage(tenant, title, recentTitles);
 
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
@@ -79,7 +131,6 @@ ${categoryInstruction}`;
     ...(personaPrompt ? { system: personaPrompt } : {}),
     messages: [{ role: 'user', content: prompt }],
   });
-
   const raw = message.content[0].type === 'text' ? message.content[0].text : '';
 
   const jsonMatch = raw.match(/```json\s*([\s\S]*?)```/);
