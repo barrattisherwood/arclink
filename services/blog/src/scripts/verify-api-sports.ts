@@ -25,7 +25,37 @@ async function run() {
     console.log(`  ${String(l.id).padEnd(6)} ${l.name}`);
   });
 
-  // 2. Fetch upcoming fixtures
+  // 2. Probe the first league with raw logging to diagnose
+  console.log('\n--- Raw probe: URC (76) next 10 games, season 2025 ---');
+  const now = new Date();
+  const season = now.getMonth() < 6 ? now.getFullYear() - 1 : now.getFullYear();
+  console.log('  Using season:', season);
+
+  const key = process.env.API_SPORTS_KEY!;
+
+  const probeNext = await axios.get<any>(`${BASE}/games`, {
+    headers: { 'x-apisports-key': key },
+    params: { league: 76, season, next: 10 }
+  });
+  console.log('  results (next):', probeNext.data.results, '| errors:', JSON.stringify(probeNext.data.errors));
+  if (probeNext.data.response?.length) {
+    console.log('  first game:', JSON.stringify(probeNext.data.response[0], null, 2));
+  }
+
+  // Also try with from/to dates
+  const from = now.toISOString().split('T')[0];
+  const to = new Date(now.getTime() + 14 * 86400000).toISOString().split('T')[0];
+  console.log(`\n--- Raw probe: URC (76) from ${from} to ${to} ---`);
+  const probeDate = await axios.get<any>(`${BASE}/games`, {
+    headers: { 'x-apisports-key': key },
+    params: { league: 76, season, from, to }
+  });
+  console.log('  results (date range):', probeDate.data.results, '| errors:', JSON.stringify(probeDate.data.errors));
+  if (probeDate.data.response?.length) {
+    console.log('  first game:', JSON.stringify(probeDate.data.response[0], null, 2));
+  }
+
+  // 3. Fetch upcoming fixtures
   console.log('\n--- Fetching upcoming fixtures (next 14 days) ---');
   const fixtures = await fetchUpcomingFixtures('rugby_union', 14);
   console.log(`Fetched ${fixtures.length} total fixtures`);
