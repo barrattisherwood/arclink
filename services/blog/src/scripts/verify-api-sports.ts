@@ -31,8 +31,6 @@ async function run() {
   const season = now.getMonth() < 6 ? now.getFullYear() - 1 : now.getFullYear();
   console.log('  Using season:', season);
 
-  const key = process.env.API_SPORTS_KEY!;
-
   const probeNext = await axios.get<any>(`${BASE}/games`, {
     headers: { 'x-apisports-key': key },
     params: { league: 76, season, next: 10 }
