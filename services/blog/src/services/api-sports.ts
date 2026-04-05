@@ -31,11 +31,18 @@ export async function fetchUpcomingFixtures(
   const leagueIds = LEAGUE_IDS[sport] ?? [];
   const fixtures: ApiSportsFixture[] = [];
 
+  // URC/Super Rugby/Currie Cup seasons start mid-year and span into next year.
+  // In Jan–Jun we're in the season that started the prior year.
+  const now = new Date();
+  const season = now.getMonth() < 6
+    ? now.getFullYear() - 1
+    : now.getFullYear();
+
   for (const leagueId of leagueIds) {
     try {
       const { data } = await axios.get<{ response?: any[] }>(`${BASE}/games`, {
         headers: { 'x-apisports-key': KEY },
-        params: { league: leagueId, next: daysAhead }
+        params: { league: leagueId, season, next: daysAhead }
       });
       fixtures.push(...(data.response ?? []).map(mapFixture));
     } catch (err) {

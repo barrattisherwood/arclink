@@ -26,8 +26,8 @@ async function run() {
   });
 
   // 2. Fetch upcoming fixtures
-  console.log('\n--- Fetching upcoming fixtures (next 7 days) ---');
-  const fixtures = await fetchUpcomingFixtures('rugby_union', 7);
+  console.log('\n--- Fetching upcoming fixtures (next 14 days) ---');
+  const fixtures = await fetchUpcomingFixtures('rugby_union', 14);
   console.log(`Fetched ${fixtures.length} total fixtures`);
 
   // 3. Score and select
