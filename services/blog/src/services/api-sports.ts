@@ -3,13 +3,13 @@ import axios from 'axios';
 const BASE = 'https://v1.rugby.api-sports.io';
 const KEY = process.env['API_SPORTS_KEY']!;
 
-// Confirm these IDs by calling GET /leagues first
+// Confirmed IDs from GET /leagues
 const LEAGUE_IDS: Record<string, number[]> = {
   rugby_union: [
-    61,   // URC — VERIFY
-    116,  // Currie Cup — VERIFY
-    58,   // Rugby Championship — VERIFY
-    48,   // Super Rugby Pacific — VERIFY
+    76,   // United Rugby Championship (URC)
+    37,   // Currie Cup
+    85,   // Rugby Championship
+    71,   // Super Rugby
   ]
 };
 
@@ -30,13 +30,12 @@ export async function fetchUpcomingFixtures(
 
   const leagueIds = LEAGUE_IDS[sport] ?? [];
   const fixtures: ApiSportsFixture[] = [];
-  const season = new Date().getFullYear();
 
   for (const leagueId of leagueIds) {
     try {
       const { data } = await axios.get<{ response?: any[] }>(`${BASE}/games`, {
         headers: { 'x-apisports-key': KEY },
-        params: { league: leagueId, season, next: daysAhead }
+        params: { league: leagueId, next: daysAhead }
       });
       fixtures.push(...(data.response ?? []).map(mapFixture));
     } catch (err) {
