@@ -9,6 +9,7 @@ export interface ITitleQueue extends Document {
   notes: string | null;
   persona_tag: string | null;
   fixtures: IFixtureEntry[];
+  is_weekly_roundup: boolean;
   created_at: Date;
 }
 
@@ -19,6 +20,7 @@ const TitleQueueSchema = new Schema<ITitleQueue>({
   priority: { type: Number, required: true, default: 0 },
   notes: { type: String, default: null },
   persona_tag: { type: String, default: null },
+  is_weekly_roundup: { type: Boolean, default: false },
   fixtures: {
     type: [{
       homeTeam: { type: String, required: true },

@@ -19,6 +19,8 @@ export interface IBlogTenant extends Document {
   blog_canonical_base: string;
   blog_persona_prompts: Map<string, string>;
   blog_images_enabled: boolean;
+  sport_key: string;
+  sport_label: string;
   created_at: Date;
 }
 
@@ -41,6 +43,8 @@ const BlogTenantSchema = new Schema<IBlogTenant>({
   blog_canonical_base: { type: String, default: '' },
   blog_persona_prompts: { type: Map, of: String, default: new Map() },
   blog_images_enabled: { type: Boolean, default: true },
+  sport_key: { type: String, default: '' },
+  sport_label: { type: String, default: '' },
   created_at: { type: Date, required: true, default: Date.now },
 });
 

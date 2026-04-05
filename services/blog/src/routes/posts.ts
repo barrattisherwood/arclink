@@ -229,18 +229,23 @@ router.post('/:postId/feature', requireAuth, async (req: Request, res: Response)
   res.json({ post });
 });
 
-// GET /posts/:tenantId/:slug — single published post (public)
-router.get('/:slug', resolveTenant, async (req: Request, res: Response): Promise<void> => {
-  const { tenantId, slug } = req.params;
+// POST /posts/:tenantId/generate-roundup — manually trigger the weekly roundup pipeline
+router.post('/generate-roundup', requireAuth, async (req: Request, res: Response): Promise<void> => {
+  const tenant = req.tenant!;
+  try {
+    const { runWeeklyRoundup } = await import('../scheduler-weekly-roundup');
+    await runWeeklyRoundup(tenant);
 
-  const post = await Post.findOne({ tenant_id: tenantId, slug, status: 'published' });
+    const post = await Post.findOne({
+      tenant_id: tenant.id,
+      article_format: 'weekly-roundup',
+      status: 'draft',
+    }).sort({ created_at: -1 });
 
-  if (!post) {
-    res.status(404).json({ error: 'Post not found' });
-    return;
+    res.json({ ok: true, post });
+  } catch (err: any) {
+    res.status(500).json({ ok: false, error: err.message });
   }
-
-  res.json({ post });
 });
 
 // GET /posts/:tenantId/sitemap.xml — sitemap of published posts (public)
@@ -272,6 +277,20 @@ router.get('/sitemap.xml', resolveTenant, async (req: Request, res: Response): P
 
   res.setHeader('Content-Type', 'application/xml; charset=utf-8');
   res.send(xml);
+});
+
+// GET /posts/:tenantId/:slug — single published post (public)
+router.get('/:slug', resolveTenant, async (req: Request, res: Response): Promise<void> => {
+  const { tenantId, slug } = req.params;
+
+  const post = await Post.findOne({ tenant_id: tenantId, slug, status: 'published' });
+
+  if (!post) {
+    res.status(404).json({ error: 'Post not found' });
+    return;
+  }
+
+  res.json({ post });
 });
 
 // POST /posts/:tenantId — create post manually (protected)

@@ -121,6 +121,12 @@ export class BlogApiService {
     );
   }
 
+  generateRoundupNow() {
+    return this.http.post<{ ok: boolean; post: Post }>(
+      `${this.base}/posts/${this.tenantId}/generate-roundup`, {}, { headers: this.headers }
+    );
+  }
+
   checkTenant(siteId: string) {
     return this.http.get<{ exists: boolean; tenantId?: string }>(
       `${this.base}/tenant/${siteId}`

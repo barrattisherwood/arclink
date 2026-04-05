@@ -1,5 +1,6 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { RouterLink } from '@angular/router';
 import { BlogApiService } from '../../../core/services/blog-api.service';
 import { ToastService } from '../../../shared/services/toast.service';
 import { Post } from '../../../models/blog.model';
@@ -7,14 +8,35 @@ import { Post } from '../../../models/blog.model';
 @Component({
   selector: 'app-published',
   standalone: true,
-  imports: [DatePipe],
+  imports: [DatePipe, RouterLink],
   template: `
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg font-semibold text-white">Published</h2>
-      @if (total() > 0) {
-        <span class="text-xs text-[#666]">{{ total() }} posts &middot; {{ pages() }} pages</span>
-      }
+      <div class="flex items-center gap-3">
+        @if (total() > 0) {
+          <span class="text-xs text-[#666]">{{ total() }} posts &middot; {{ pages() }} pages</span>
+        }
+        <button (click)="generateRoundupNow()"
+                [disabled]="generating()"
+                class="text-xs px-2.5 py-1 rounded bg-[#1a1a1a] border border-[#2a2a2a] text-[#aaa] hover:text-white hover:border-[#444] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer">
+          @if (generating()) {
+            <span class="inline-block w-3 h-3 border border-[#555] border-t-white rounded-full animate-spin mr-1"></span>Generating...
+          } @else {
+            ⚡ Generate weekly roundup
+          }
+        </button>
+      </div>
     </div>
+
+    @if (generateResult()) {
+      <div class="mb-3 px-3 py-2 rounded bg-green-900/30 border border-green-800/40 text-xs text-green-300">
+        Draft created: "{{ generateResult()!.title }}" —
+        <a routerLink="/blog/drafts" class="underline">View in drafts →</a>
+      </div>
+    }
+    @if (generateError()) {
+      <div class="mb-3 px-3 py-2 rounded bg-red-900/30 border border-red-800/40 text-xs text-red-300">{{ generateError() }}</div>
+    }
 
     @if (loading()) {
       <p class="text-sm text-[#555]">Loading...</p>
@@ -78,6 +100,9 @@ export class PublishedComponent implements OnInit {
   pages = signal(0);
   loading = signal(false);
   deleting = signal('');
+  generating = signal(false);
+  generateResult = signal<Post | null>(null);
+  generateError = signal<string | null>(null);
 
   ngOnInit() { this.load(); }
 
@@ -114,6 +139,24 @@ export class PublishedComponent implements OnInit {
         this.toast.success('Homepage roundup updated');
       },
       error: () => this.toast.error('Failed to set featured post')
+    });
+  }
+
+  generateRoundupNow() {
+    this.generating.set(true);
+    this.generateResult.set(null);
+    this.generateError.set(null);
+
+    this.api.generateRoundupNow().subscribe({
+      next: (res) => {
+        this.generating.set(false);
+        this.generateResult.set(res.post);
+        this.load();
+      },
+      error: (err) => {
+        this.generating.set(false);
+        this.generateError.set(err.error?.error ?? 'Generation failed — check Railway logs');
+      }
     });
   }
 }

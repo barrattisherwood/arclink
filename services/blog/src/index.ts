@@ -9,6 +9,7 @@ import suggestRouter from './routes/suggest';
 import feedRouter from './routes/feed';
 import tenantRouter from './routes/tenant';
 import { startScheduler } from './scheduler';
+import './scheduler-weekly-roundup';
 
 const app = express();
 const PORT = process.env.PORT ?? 3002;
