@@ -41,8 +41,17 @@ import { Post } from '../../../models/blog.model';
           <span class="text-[10px] text-[#555] shrink-0">{{ post.published_at | date:'MMM d, y' }}</span>
           <span class="text-[10px] text-[#555] shrink-0">{{ post.word_count }}w</span>
           <span class="text-[10px] text-[#555] shrink-0 max-w-[120px] truncate">/{{ post.slug }}</span>
-          @if (post.article_format === 'dialogue') {
-            <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-900/40 text-blue-300 shrink-0">Dialogue</span>
+          @if (post.article_format === 'dialogue' || post.article_format === 'weekly-roundup') {
+            <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-900/40 text-blue-300 shrink-0">
+              {{ post.article_format === 'weekly-roundup' ? 'Roundup' : 'Dialogue' }}
+            </span>
+          }
+          @if (post.article_format === 'weekly-roundup') {
+            <button (click)="setFeatured(post.id)"
+                    class="text-[10px] px-1.5 py-0.5 rounded cursor-pointer transition-colors shrink-0"
+                    [class]="post.featured ? 'bg-yellow-900/40 text-yellow-300' : 'bg-[#1a1a1a] text-[#555] hover:text-yellow-300'">
+              {{ post.featured ? '★ Homepage' : '☆ Homepage' }}
+            </button>
           }
 
           @for (tag of post.tags.slice(0, 4); track tag) {
@@ -95,6 +104,16 @@ export class PublishedComponent implements OnInit {
         this.toast.success('Post deleted');
       },
       error: () => { this.deleting.set(''); this.toast.error('Failed to delete'); }
+    });
+  }
+
+  setFeatured(id: string) {
+    this.api.featurePost(id).subscribe({
+      next: () => {
+        this.posts.update(posts => posts.map(p => ({ ...p, featured: p.id === id })));
+        this.toast.success('Homepage roundup updated');
+      },
+      error: () => this.toast.error('Failed to set featured post')
     });
   }
 }

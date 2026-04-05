@@ -3,12 +3,22 @@ export interface TitleSuggestion {
   rationale: string;
 }
 
+export interface FixtureEntry {
+  homeTeam: string;
+  awayTeam: string;
+  competition: string;
+  venue: string;
+  kickoff: string;
+  matchLabel: string;
+}
+
 export interface QueueItem {
   id: string;
   title: string;
   priority: number;
   notes: string | null;
   persona_tag: string | null;
+  fixtures: FixtureEntry[];
   created_at: string;
 }
 
@@ -16,6 +26,11 @@ export interface DialogueBlock {
   persona: string;
   content: string;
   order: number;
+}
+
+export interface FixtureDialogue {
+  matchLabel: string;
+  blocks: DialogueBlock[];
 }
 
 export interface Post {
@@ -35,8 +50,11 @@ export interface Post {
   published_at: string | null;
   created_at: string;
   content?: string;
-  article_format?: 'standard' | 'dialogue';
+  article_format?: 'standard' | 'dialogue' | 'weekly-roundup';
   dialogue_blocks?: DialogueBlock[];
+  fixture_dialogues?: FixtureDialogue[];
+  fixture_list?: FixtureEntry[];
+  featured?: boolean;
   featured_image: {
     url: string;
     alt: string;

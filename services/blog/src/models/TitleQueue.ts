@@ -1,4 +1,5 @@
 import { Schema, model, Document } from 'mongoose';
+import { IFixtureEntry } from './Post';
 
 export interface ITitleQueue extends Document {
   id: string;
@@ -7,6 +8,7 @@ export interface ITitleQueue extends Document {
   priority: number;
   notes: string | null;
   persona_tag: string | null;
+  fixtures: IFixtureEntry[];
   created_at: Date;
 }
 
@@ -17,6 +19,17 @@ const TitleQueueSchema = new Schema<ITitleQueue>({
   priority: { type: Number, required: true, default: 0 },
   notes: { type: String, default: null },
   persona_tag: { type: String, default: null },
+  fixtures: {
+    type: [{
+      homeTeam: { type: String, required: true },
+      awayTeam: { type: String, required: true },
+      competition: { type: String, default: '' },
+      venue: { type: String, default: '' },
+      kickoff: { type: String, default: '' },
+      matchLabel: { type: String, required: true },
+    }],
+    default: [],
+  },
   created_at: { type: Date, required: true, default: Date.now },
 });
 

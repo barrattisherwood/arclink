@@ -187,6 +187,48 @@ router.post('/:postId/upload-image', requireAuth, async (req: Request, res: Resp
   res.json({ post });
 });
 
+// GET /posts/:tenantId/featured — current pinned weekly roundup (public)
+router.get('/featured', resolveTenant, async (req: Request, res: Response): Promise<void> => {
+  const { tenantId } = req.params;
+
+  const post = await Post.findOne({
+    tenant_id: tenantId,
+    featured: true,
+    status: 'published',
+  }).sort({ published_at: -1 });
+
+  if (!post) {
+    res.status(404).json({ error: 'No featured post found' });
+    return;
+  }
+
+  res.json({ post });
+});
+
+// POST /posts/:tenantId/:postId/feature — promote post to homepage featured (protected)
+router.post('/:postId/feature', requireAuth, async (req: Request, res: Response): Promise<void> => {
+  const { tenantId, postId } = req.params;
+
+  // Unpin any currently featured posts
+  await Post.updateMany(
+    { tenant_id: tenantId, featured: true },
+    { $set: { featured: false } },
+  );
+
+  const post = await Post.findOneAndUpdate(
+    { tenant_id: tenantId, id: postId },
+    { $set: { featured: true } },
+    { new: true },
+  );
+
+  if (!post) {
+    res.status(404).json({ error: 'Post not found' });
+    return;
+  }
+
+  res.json({ post });
+});
+
 // GET /posts/:tenantId/:slug — single published post (public)
 router.get('/:slug', resolveTenant, async (req: Request, res: Response): Promise<void> => {
   const { tenantId, slug } = req.params;

@@ -6,7 +6,7 @@ import { Post } from '../models/Post';
 import { TitleQueue } from '../models/TitleQueue';
 import { generatePost } from '../services/claude';
 import { fetchUnsplashImage } from '../services/unsplash';
-import { parseDialogueContent } from '../utils/dialogue-parser';
+import { parseDialogueContent, parseWeeklyRoundup } from '../utils/dialogue-parser';
 
 const router = Router({ mergeParams: true });
 
@@ -55,7 +55,7 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
     personaTag = personaTags[(lastIndex + 1) % personaTags.length];
   }
 
-  const generated = await generatePost(tenant, next.title, recentTitles, personaTag);
+  const generated = await generatePost(tenant, next.title, recentTitles, personaTag, next.fixtures?.length ? next.fixtures : undefined);
 
   const featured_image = tenant.blog_images_enabled
     ? await fetchUnsplashImage(generated.unsplash_keyword, generated.alt_text || next.title)
@@ -69,7 +69,26 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
   const tags = generated.tags;
   if (personaTag && !tags.includes(personaTag)) tags.push(personaTag);
 
-  const parsed = personaTag ? parseDialogueContent(generated.content) : { isValid: false, blocks: [] };
+  const isRoundup = !!next.fixtures?.length;
+
+  let article_format: 'standard' | 'dialogue' | 'weekly-roundup' = 'standard';
+  let dialogue_blocks: { persona: string; content: string; order: number }[] = [];
+  let fixture_dialogues: { matchLabel: string; blocks: { persona: string; content: string; order: number }[] }[] = [];
+
+  if (isRoundup) {
+    const parsed = parseWeeklyRoundup(generated.content);
+    if (parsed.isValid) {
+      article_format = 'weekly-roundup';
+      fixture_dialogues = parsed.fixtures;
+      dialogue_blocks = parsed.fixtures.flatMap(f => f.blocks);
+    }
+  } else if (personaTag) {
+    const parsed = parseDialogueContent(generated.content);
+    if (parsed.isValid) {
+      article_format = 'dialogue';
+      dialogue_blocks = parsed.blocks;
+    }
+  }
 
   const post = await Post.create({
     id: randomUUID(),
@@ -89,8 +108,11 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
     featured_image,
     word_count,
     generated: true,
-    article_format: parsed.isValid ? 'dialogue' : 'standard',
-    dialogue_blocks: parsed.isValid ? parsed.blocks : [],
+    article_format,
+    dialogue_blocks,
+    fixture_dialogues,
+    fixture_list: next.fixtures ?? [],
+    featured: false,
   });
 
   // Remove from queue

@@ -2,7 +2,7 @@ import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
 import { tap } from 'rxjs';
 import { environment } from '../../../environments/environment';
-import { Post, QueueItem, TitleSuggestion } from '../../models/blog.model';
+import { Post, QueueItem, TitleSuggestion, FixtureEntry } from '../../models/blog.model';
 import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
@@ -36,7 +36,7 @@ export class BlogApiService {
     );
   }
 
-  addToQueue(titles: Array<{ title: string; persona_tag?: string }>) {
+  addToQueue(titles: Array<{ title: string; persona_tag?: string; fixtures?: FixtureEntry[] }>) {
     return this.http.post<{ items: QueueItem[] }>(
       `${this.base}/queue/${this.tenantId}`, { titles }, { headers: this.headers }
     );
@@ -112,6 +112,12 @@ export class BlogApiService {
   deletePost(postId: string) {
     return this.http.delete<{ ok: boolean }>(
       `${this.base}/posts/${this.tenantId}/${postId}`, { headers: this.headers }
+    );
+  }
+
+  featurePost(postId: string) {
+    return this.http.post<{ post: Post }>(
+      `${this.base}/posts/${this.tenantId}/${postId}/feature`, {}, { headers: this.headers }
     );
   }
 

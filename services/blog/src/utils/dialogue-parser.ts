@@ -10,6 +10,17 @@ export interface ParsedDialogue {
   error?: string;
 }
 
+export interface FixtureDialogue {
+  matchLabel: string;
+  blocks: DialogueBlock[];
+}
+
+export interface ParsedWeeklyRoundup {
+  fixtures: FixtureDialogue[];
+  isValid: boolean;
+  error?: string;
+}
+
 export function parseDialogueContent(raw: string): ParsedDialogue {
   const blockRegex = /\[(KWAGGA|MARCUS)\]([\s\S]*?)\[\/(KWAGGA|MARCUS)\]/gi;
   const blocks: DialogueBlock[] = [];
@@ -40,4 +51,45 @@ export function parseDialogueContent(raw: string): ParsedDialogue {
   }
 
   return { blocks, isValid: true };
+}
+
+export function parseWeeklyRoundup(raw: string): ParsedWeeklyRoundup {
+  const fixtureRegex = /\[FIXTURE:\s*([^\]]+)\]([\s\S]*?)\[\/FIXTURE\]/gi;
+  const fixtures: FixtureDialogue[] = [];
+  let match;
+
+  while ((match = fixtureRegex.exec(raw)) !== null) {
+    const matchLabel = match[1].trim();
+    const fixtureContent = match[2];
+
+    const parsed = parseDialogueContent(fixtureContent);
+
+    if (!parsed.isValid) {
+      return {
+        fixtures: [],
+        isValid: false,
+        error: `Invalid dialogue in fixture "${matchLabel}": ${parsed.error}`,
+      };
+    }
+
+    fixtures.push({ matchLabel, blocks: parsed.blocks });
+  }
+
+  if (fixtures.length === 0) {
+    // Try single-fixture fallback (v1 format — bare KWAGGA/MARCUS blocks)
+    const parsed = parseDialogueContent(raw);
+    if (parsed.isValid) {
+      return {
+        fixtures: [{ matchLabel: '', blocks: parsed.blocks }],
+        isValid: true,
+      };
+    }
+    return {
+      fixtures: [],
+      isValid: false,
+      error: 'No fixture blocks found',
+    };
+  }
+
+  return { fixtures, isValid: true };
 }

@@ -1,5 +1,6 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { IBlogTenant } from '../models/BlogTenant';
+import { IFixtureEntry } from '../models/Post';
 
 const client = new Anthropic();
 
@@ -97,6 +98,82 @@ Site: ${tenant.name}
 Audience: ${tenant.blog_audience}`;
 }
 
+function buildCombinedPersonaSystem(tenant: IBlogTenant): string {
+  const kwagga = tenant.blog_persona_prompts?.get('kwagga') ?? '';
+  const marcus = tenant.blog_persona_prompts?.get('marcus') ?? '';
+
+  return `You are writing as TWO personas alternating within a single article.
+
+PERSONA 1 — KWAGGA (writes [KWAGGA] blocks):
+${kwagga}
+
+PERSONA 2 — MARCUS (writes [MARCUS] blocks):
+${marcus}
+
+Switch fully into each persona when writing their blocks.
+The two voices must be genuinely distinct. Kwagga and Marcus are allowed
+to disagree and often do. Marcus should acknowledge Kwagga's point before
+building his own angle. Kwagga may be unmoved by Marcus's market analysis.`;
+}
+
+function buildWeeklyRoundupMessage(
+  tenant: IBlogTenant,
+  title: string,
+  fixtures: IFixtureEntry[],
+): string {
+  const fixtureList = fixtures
+    .map((f, i) => `${i + 1}. ${f.matchLabel} (${f.competition})`)
+    .join('\n');
+
+  const fixtureBlocks = fixtures
+    .map(f => `[FIXTURE: ${f.matchLabel}]
+[KWAGGA]
+...Kwagga's analysis for ${f.matchLabel}...
+[/KWAGGA]
+[MARCUS]
+...Marcus's response for ${f.matchLabel}...
+[/MARCUS]
+[/FIXTURE]`)
+    .join('\n\n');
+
+  return `Write a weekly rugby betting dialogue for the following title:
+
+"${title}"
+
+This weekend's fixtures to cover:
+${fixtureList}
+
+FORMAT — CRITICAL. For each fixture produce one exchange using these exact delimiters:
+
+${fixtureBlocks}
+
+Rules per fixture:
+- Kwagga opens (150–180 words): set piece, conditions, provincial angle. Dry, authoritative.
+- Marcus responds (150–180 words): defensive structure and market angle. May agree or push back — genuine dialogue.
+- Marcus must reference Kwagga's point by name in his response.
+- Each speaker ends their block with one "Bet at [Bookmaker]" CTA — a specific SA bookmaker.
+- Use different bookmakers across the roundup where possible.
+- Valid bookmakers: Hollywoodbets, Betway, 10bet, Supabets, Sportingbet, Playa, WSB.
+
+Persona reminder:
+- Kwagga: dry SA rugby authority, set-piece obsessed, conditions-first
+- Marcus: tactical precision, market inefficiency lens, sardonic about odds
+
+After all fixture blocks, output a JSON block (fenced with \`\`\`json):
+{
+  "seo_title": "Weekend URC betting preview max 60 chars",
+  "seo_description": "Meta description max 155 chars",
+  "excerpt": "Brief summary of what this roundup covers, max 200 chars",
+  "categories": ["Fixture Previews"],
+  "tags": ["kwagga", "marcus", "urc", "fixture-preview", "weekly-roundup"],
+  "unsplash_keyword": "south africa rugby",
+  "alt_text": "${title}"
+}
+
+Site: ${tenant.name}
+Audience: ${tenant.blog_audience}`;
+}
+
 export interface GeneratedPost {
   content: string;
   excerpt: string;
@@ -118,17 +195,25 @@ export async function generatePost(
   title: string,
   recentTitles: string[],
   personaTag?: string | null,
+  fixtures?: IFixtureEntry[],
 ): Promise<GeneratedPost> {
-  const personaPrompt = personaTag && tenant.blog_persona_prompts?.get(personaTag);
+  const isWeeklyRoundup = !!fixtures?.length;
+  const personaPrompt = !isWeeklyRoundup && personaTag && tenant.blog_persona_prompts?.get(personaTag);
 
-  const prompt = personaTag
-    ? buildDialogueUserMessage(tenant, title, personaTag, recentTitles)
-    : buildStandardUserMessage(tenant, title, recentTitles);
+  const prompt = isWeeklyRoundup
+    ? buildWeeklyRoundupMessage(tenant, title, fixtures!)
+    : personaTag
+      ? buildDialogueUserMessage(tenant, title, personaTag, recentTitles)
+      : buildStandardUserMessage(tenant, title, recentTitles);
+
+  const systemPrompt = isWeeklyRoundup
+    ? buildCombinedPersonaSystem(tenant)
+    : personaPrompt || undefined;
 
   const message = await client.messages.create({
     model: 'claude-sonnet-4-6',
-    max_tokens: 4096,
-    ...(personaPrompt ? { system: personaPrompt } : {}),
+    max_tokens: isWeeklyRoundup ? 8000 : 4096,
+    ...(systemPrompt ? { system: systemPrompt } : {}),
     messages: [{ role: 'user', content: prompt }],
   });
   const raw = message.content[0].type === 'text' ? message.content[0].text : '';
