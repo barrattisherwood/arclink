@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import { randomUUID } from 'crypto';
 import slugify from 'slugify';
-import { fetchUpcomingFixtures } from './services/api-sports';
+import { fetchUpcomingFixtures } from './services/sportdb';
 import { scoreAndSelectFixtures } from './services/fixture-selector';
 import { generatePost } from './services/claude';
 import { BlogTenant, IBlogTenant } from './models/BlogTenant';

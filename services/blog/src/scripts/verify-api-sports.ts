@@ -6,7 +6,7 @@
  */
 import 'dotenv/config';
 import axios from 'axios';
-import { fetchUpcomingFixtures } from '../services/api-sports';
+import { fetchUpcomingFixtures } from '../services/sportdb';
 import { scoreAndSelectFixtures } from '../services/fixture-selector';
 
 const BASE = 'https://v1.rugby.api-sports.io';

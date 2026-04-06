@@ -1,4 +1,4 @@
-import { ApiSportsFixture } from './api-sports';
+import { SportDbFixture as ApiSportsFixture } from './sportdb';
 
 const SA_TEAMS = [
   'Bulls', 'Stormers', 'Lions', 'Sharks', 'Cheetahs',
