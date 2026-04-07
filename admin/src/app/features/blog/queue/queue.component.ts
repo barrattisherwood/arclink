@@ -1,15 +1,42 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { RouterLink } from '@angular/router';
 import { BlogApiService } from '../../../core/services/blog-api.service';
 import { ToastService } from '../../../shared/services/toast.service';
-import { TitleSuggestion, QueueItem, FixtureEntry } from '../../../models/blog.model';
+import { TitleSuggestion, QueueItem, Post } from '../../../models/blog.model';
 
 @Component({
   selector: 'app-queue',
   standalone: true,
-  imports: [FormsModule],
+  imports: [FormsModule, RouterLink],
   template: `
     <h2 class="text-lg font-semibold text-white mb-4">Queue</h2>
+
+    <!-- Generate Weekly Roundup -->
+    <div class="bg-[#111] rounded-lg border border-[#1a1a1a] p-4 mb-6 flex items-center justify-between">
+      <div class="flex-1 min-w-0 mr-4">
+        <p class="text-sm font-medium text-white">Weekly Roundup</p>
+        <p class="text-xs text-[#555] mt-0.5">Auto-fetch upcoming fixtures and generate a Kwagga/Marcus dialogue draft</p>
+        @if (roundupResult()) {
+          <p class="text-xs text-green-400 mt-1">
+            Draft created: "{{ roundupResult()!.title }}" —
+            <a routerLink="/blog/drafts" class="underline">View in Drafts →</a>
+          </p>
+        }
+        @if (roundupError()) {
+          <p class="text-xs text-red-400 mt-1">{{ roundupError() }}</p>
+        }
+      </div>
+      <button (click)="generateRoundupNow()"
+              [disabled]="generatingRoundup()"
+              class="px-4 py-2 text-sm rounded-md bg-amber-700 hover:bg-amber-600 text-white disabled:opacity-50 cursor-pointer transition-colors shrink-0 whitespace-nowrap">
+        @if (generatingRoundup()) {
+          <span class="inline-block w-3 h-3 border border-[#fff5] border-t-white rounded-full animate-spin mr-1"></span>Generating...
+        } @else {
+          ⚡ Generate weekly roundup
+        }
+      </button>
+    </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Suggestions / Add Panel -->
@@ -54,50 +81,6 @@ import { TitleSuggestion, QueueItem, FixtureEntry } from '../../../models/blog.m
           </div>
         }
 
-        <!-- Weekly Roundup Manual Entry -->
-        <div class="mt-6 pt-5 border-t border-[#1a1a1a]">
-          <p class="text-xs font-medium text-[#999] mb-3">Weekly Roundup</p>
-
-          <input [(ngModel)]="roundupTitle"
-                 placeholder="e.g. URC Weekend Preview — 5 April"
-                 class="w-full px-3 py-2 text-sm rounded-md bg-[#0a0a0a] border border-[#2a2a2a] text-white placeholder-[#444] mb-3">
-
-          <div class="space-y-2">
-            @for (fixture of newFixtures; track $index; let i = $index) {
-              <div class="bg-[#0a0a0a] rounded-md border border-[#222] p-3">
-                <div class="flex gap-2 mb-2">
-                  <input [(ngModel)]="fixture.homeTeam" placeholder="Home"
-                         class="flex-1 px-2 py-1 text-xs rounded bg-[#1a1a1a] border border-[#2a2a2a] text-white placeholder-[#444]">
-                  <span class="text-xs text-[#555] self-center">vs</span>
-                  <input [(ngModel)]="fixture.awayTeam" placeholder="Away"
-                         class="flex-1 px-2 py-1 text-xs rounded bg-[#1a1a1a] border border-[#2a2a2a] text-white placeholder-[#444]">
-                  <button (click)="removeFixture(i)"
-                          class="text-xs text-[#555] hover:text-red-400 cursor-pointer transition-colors px-1">✕</button>
-                </div>
-                <div class="flex gap-2">
-                  <input [(ngModel)]="fixture.competition" placeholder="Competition"
-                         class="flex-1 px-2 py-1 text-xs rounded bg-[#1a1a1a] border border-[#2a2a2a] text-white placeholder-[#444]">
-                  <input [(ngModel)]="fixture.venue" placeholder="Venue"
-                         class="flex-1 px-2 py-1 text-xs rounded bg-[#1a1a1a] border border-[#2a2a2a] text-white placeholder-[#444]">
-                  <input [(ngModel)]="fixture.kickoff" type="datetime-local"
-                         class="px-2 py-1 text-xs rounded bg-[#1a1a1a] border border-[#2a2a2a] text-white">
-                </div>
-              </div>
-            }
-          </div>
-
-          <div class="flex gap-2 mt-3">
-            <button (click)="addFixture()"
-                    class="flex-1 py-1.5 text-xs rounded-md bg-[#1a1a1a] hover:bg-[#222] text-[#999] cursor-pointer transition-colors">
-              + Add fixture
-            </button>
-            <button (click)="addRoundup()"
-                    [disabled]="!roundupTitle.trim() || newFixtures.length === 0"
-                    class="flex-1 py-1.5 text-xs rounded-md bg-green-800 hover:bg-green-700 text-white disabled:opacity-40 cursor-pointer transition-colors">
-              Add Roundup to Queue
-            </button>
-          </div>
-        </div>
       </div>
 
       <!-- Queue Panel -->
@@ -165,9 +148,9 @@ export class QueueComponent implements OnInit {
   suggesting = signal(false);
   generating = signal(false);
   prioritising = signal(false);
-
-  roundupTitle = '';
-  newFixtures: Partial<FixtureEntry>[] = [{}];
+  generatingRoundup = signal(false);
+  roundupResult = signal<Post | null>(null);
+  roundupError = signal<string | null>(null);
 
   ngOnInit() {
     this.loadQueue();
@@ -212,54 +195,19 @@ export class QueueComponent implements OnInit {
     });
   }
 
-  addFixture() {
-    this.newFixtures = [...this.newFixtures, {}];
-  }
-
-  removeFixture(index: number) {
-    this.newFixtures = this.newFixtures.filter((_, i) => i !== index);
-  }
-
-  buildMatchLabel(f: Partial<FixtureEntry>): string {
-    if (!f.homeTeam || !f.awayTeam) return `${f.homeTeam ?? '?'} vs ${f.awayTeam ?? '?'}`;
-    const kickoffDate = f.kickoff ? new Date(f.kickoff) : null;
-    const dayTime = kickoffDate
-      ? kickoffDate.toLocaleDateString('en-ZA', { weekday: 'short' }) + ' ' +
-        kickoffDate.toLocaleTimeString('en-ZA', { hour: '2-digit', minute: '2-digit' })
-      : '';
-    return [
-      `${f.homeTeam} vs ${f.awayTeam}`,
-      f.venue,
-      dayTime,
-    ].filter(Boolean).join(' · ');
-  }
-
-  addRoundup() {
-    if (!this.roundupTitle.trim() || !this.newFixtures.length) return;
-    const fixtures: FixtureEntry[] = this.newFixtures
-      .filter(f => f.homeTeam && f.awayTeam)
-      .map(f => ({
-        homeTeam: f.homeTeam!,
-        awayTeam: f.awayTeam!,
-        competition: f.competition ?? '',
-        venue: f.venue ?? '',
-        kickoff: f.kickoff ?? '',
-        matchLabel: this.buildMatchLabel(f),
-      }));
-
-    if (!fixtures.length) {
-      this.toast.error('Add at least one complete fixture (home + away team)');
-      return;
-    }
-
-    this.api.addToQueue([{ title: this.roundupTitle.trim(), fixtures }]).subscribe({
-      next: res => {
-        this.queue.set(res.items);
-        this.roundupTitle = '';
-        this.newFixtures = [{}];
-        this.toast.success('Weekly roundup added to queue');
+  generateRoundupNow() {
+    this.generatingRoundup.set(true);
+    this.roundupResult.set(null);
+    this.roundupError.set(null);
+    this.api.generateRoundupNow().subscribe({
+      next: (res) => {
+        this.generatingRoundup.set(false);
+        this.roundupResult.set(res.post);
       },
-      error: () => this.toast.error('Failed to add roundup to queue')
+      error: (err) => {
+        this.generatingRoundup.set(false);
+        this.roundupError.set(err.error?.error ?? 'Generation failed — check Railway logs');
+      }
     });
   }
 

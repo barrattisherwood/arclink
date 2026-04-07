@@ -45,6 +45,9 @@ import { Post } from '../../../models/blog.model';
               @if (post.article_format === 'dialogue') {
                 <span class="text-[10px] px-1.5 py-0.5 rounded bg-blue-900/40 text-blue-300">Dialogue</span>
               }
+              @if (post.article_format === 'weekly-roundup') {
+                <span class="text-[10px] px-1.5 py-0.5 rounded bg-amber-900/40 text-amber-300">Roundup</span>
+              }
               @for (tag of post.tags.slice(0, 3); track tag) {
                 <span class="text-[10px] text-[#555]">#{{ tag }}</span>
               }
