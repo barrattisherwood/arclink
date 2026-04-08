@@ -7,7 +7,8 @@
     "build": "tsc",
     "start": "node dist/index.js",
     "seed:dlc": "ts-node-dev --transpile-only src/scripts/seed-dlc-townplanning.ts",
-    "seed:rugby": "ts-node-dev --transpile-only src/scripts/seed-betwise-rugby.ts"
+    "seed:rugby": "ts-node-dev --transpile-only src/scripts/seed-betwise-rugby.ts",
+    "seed:cricket": "ts-node-dev --transpile-only src/scripts/seed-betwise-cricket.ts"
   },
   "dependencies": {
     "cloudinary": "^2.9.0",
