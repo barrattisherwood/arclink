@@ -37,7 +37,12 @@ router.get('/:siteId', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  res.json({ exists: true, tenantId: tenant.id });
+  res.json({
+    exists: true,
+    tenantId: tenant.id,
+    roundupEnabled: !!(tenant.sport_key),
+    sportLabel: tenant.sport_label || '',
+  });
 });
 
 // PATCH /tenant/:tenantId/site-id — super-admin: set siteId on a tenant

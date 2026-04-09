@@ -12,6 +12,9 @@ export class BlogApiService {
   private base = environment.blogApiUrl;
   private tenantId = environment.blogTenantId;
 
+  roundupEnabled = false;
+  sportLabel = '';
+
   setActiveTenant(tenantId: string): void {
     this.tenantId = tenantId;
   }
@@ -128,10 +131,14 @@ export class BlogApiService {
   }
 
   checkTenant(siteId: string) {
-    return this.http.get<{ exists: boolean; tenantId?: string }>(
+    return this.http.get<{ exists: boolean; tenantId?: string; roundupEnabled?: boolean; sportLabel?: string }>(
       `${this.base}/tenant/${siteId}`
     ).pipe(
-      tap(res => { if (res.tenantId) this.setActiveTenant(res.tenantId); })
+      tap(res => {
+        if (res.tenantId) this.setActiveTenant(res.tenantId);
+        this.roundupEnabled = res.roundupEnabled ?? false;
+        this.sportLabel = res.sportLabel ?? '';
+      })
     );
   }
 

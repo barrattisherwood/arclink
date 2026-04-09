@@ -13,6 +13,7 @@ import { TitleSuggestion, QueueItem, Post } from '../../../models/blog.model';
     <h2 class="text-lg font-semibold text-white mb-4">Queue</h2>
 
     <!-- Generate Weekly Roundup -->
+    @if (api.roundupEnabled) {
     <div class="bg-[#111] rounded-lg border border-[#1a1a1a] p-4 mb-6 flex items-center justify-between">
       <div class="flex-1 min-w-0 mr-4">
         <p class="text-sm font-medium text-white">Weekly Roundup</p>
@@ -37,6 +38,7 @@ import { TitleSuggestion, QueueItem, Post } from '../../../models/blog.model';
         }
       </button>
     </div>
+    }
 
     <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
       <!-- Suggestions / Add Panel -->
@@ -136,7 +138,7 @@ import { TitleSuggestion, QueueItem, Post } from '../../../models/blog.model';
   `
 })
 export class QueueComponent implements OnInit {
-  private api = inject(BlogApiService);
+  api = inject(BlogApiService);
   private toast = inject(ToastService);
 
   suggestions = signal<TitleSuggestion[]>([]);

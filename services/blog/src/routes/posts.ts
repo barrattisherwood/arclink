@@ -232,15 +232,28 @@ router.post('/:postId/feature', requireAuth, async (req: Request, res: Response)
 // POST /posts/:tenantId/generate-roundup — manually trigger the weekly roundup pipeline
 router.post('/generate-roundup', requireAuth, async (req: Request, res: Response): Promise<void> => {
   const tenant = req.tenant!;
+
+  if (!tenant.sport_key) {
+    res.status(400).json({ ok: false, error: 'No sport fixtures configured for this site. Set a sport_key on the blog tenant to enable roundup generation.' });
+    return;
+  }
+
   try {
     const { runWeeklyRoundup } = await import('../scheduler-weekly-roundup');
+    const startedAt = new Date();
     await runWeeklyRoundup(tenant);
 
     const post = await Post.findOne({
       tenant_id: tenant.id,
       article_format: 'weekly-roundup',
       status: 'draft',
+      created_at: { $gte: startedAt },
     }).sort({ created_at: -1 });
+
+    if (!post) {
+      res.status(422).json({ ok: false, error: 'No upcoming fixtures found for the next 7 days — roundup not generated.' });
+      return;
+    }
 
     res.json({ ok: true, post });
   } catch (err: any) {
