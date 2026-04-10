@@ -11,6 +11,7 @@
     "seed:cricket": "ts-node-dev --transpile-only src/scripts/seed-betwise-cricket.ts"
   },
   "dependencies": {
+    "axios": "^1.15.0",
     "cloudinary": "^2.9.0",
     "cors": "^2.x",
     "dotenv": "^16.3.1",
@@ -18,6 +19,7 @@
     "express-rate-limit": "^7.1.5",
     "mongoose": "^8.0.3",
     "multer": "^1.x",
+    "node-cron": "^3.0.3",
     "slugify": "^1.x",
     "uuid": "^9.x"
   },
@@ -26,6 +28,7 @@
     "@types/express": "^4.17.21",
     "@types/multer": "^1.x",
     "@types/node": "^20.11.0",
+    "@types/node-cron": "^3.0.11",
     "@types/uuid": "^9.x",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.3.3"

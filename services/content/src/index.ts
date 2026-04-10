@@ -5,6 +5,7 @@ import sitesRouter from './routes/sites';
 import typesRouter from './routes/types';
 import entriesRouter from './routes/entries';
 import uploadRouter from './routes/upload';
+import { startFixtureScheduler } from './scheduler-fixtures';
 
 const app = express();
 const PORT = process.env.PORT ?? 3003;
@@ -63,6 +64,8 @@ async function start(): Promise<void> {
 
   await mongoose.connect(mongoUri);
   console.log('Connected to MongoDB');
+
+  startFixtureScheduler();
 
   app.listen(PORT, () => {
     console.log(`Content service listening on port ${PORT}`);

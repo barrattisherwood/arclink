@@ -24,6 +24,114 @@ const fixtureContentType = {
 };
 
 const fixtures = [
+  // Bangladesh vs New Zealand — ODI Series (April 2026)
+  {
+    slug: 'bangladesh-vs-new-zealand-1st-odi-2026',
+    data: {
+      homeTeam: 'Bangladesh',
+      awayTeam: 'New Zealand',
+      kickoff: '2026-04-12T08:00:00Z',
+      competition: 'NZ Tour of Bangladesh — 1st ODI',
+      venue: 'Sher-e-Bangla National Stadium, Dhaka',
+      matchContext: 'Series opener — Black Caps look to build T20 World Cup momentum',
+      featuredBookmakers: ['betway', '10bet', 'hollywoodbets'],
+    },
+  },
+  {
+    slug: 'bangladesh-vs-new-zealand-2nd-odi-2026',
+    data: {
+      homeTeam: 'Bangladesh',
+      awayTeam: 'New Zealand',
+      kickoff: '2026-04-15T08:00:00Z',
+      competition: 'NZ Tour of Bangladesh — 2nd ODI',
+      venue: 'Zahur Ahmed Chowdhury Stadium, Chattogram',
+      featuredBookmakers: ['betway', '10bet', 'hollywoodbets'],
+    },
+  },
+  {
+    slug: 'bangladesh-vs-new-zealand-3rd-odi-2026',
+    data: {
+      homeTeam: 'Bangladesh',
+      awayTeam: 'New Zealand',
+      kickoff: '2026-04-18T08:00:00Z',
+      competition: 'NZ Tour of Bangladesh — 3rd ODI',
+      venue: 'Sher-e-Bangla National Stadium, Dhaka',
+      matchContext: 'Series decider — levelled at 1-1 heading into the finale',
+      featuredBookmakers: ['betway', '10bet', 'hollywoodbets'],
+    },
+  },
+  // Namibia vs Scotland — T20I (April 2026)
+  {
+    slug: 'namibia-vs-scotland-t20i-2026',
+    data: {
+      homeTeam: 'Namibia',
+      awayTeam: 'Scotland',
+      kickoff: '2026-04-13T12:00:00Z',
+      competition: 'Namibia vs Scotland — T20I',
+      venue: 'United Cricket Club, Windhoek',
+      matchContext: 'T20 World Cup warm-up — both nations eyeing qualification points',
+      featuredBookmakers: ['betway', '10bet', 'sportingbet'],
+    },
+  },
+  // IPL 2026 (April 2026)
+  {
+    slug: 'ipl-2026-mi-vs-csk-m14',
+    data: {
+      homeTeam: 'Mumbai Indians',
+      awayTeam: 'Chennai Super Kings',
+      kickoff: '2026-04-10T14:00:00Z',
+      competition: 'IPL 2026 · Match 14',
+      venue: 'Wankhede Stadium, Mumbai',
+      matchContext: 'El Clásico of Indian cricket — last five meetings split 3-2 to MI',
+      featuredBookmakers: ['betway', '10bet', 'hollywoodbets', 'playa'],
+    },
+  },
+  {
+    slug: 'ipl-2026-rcb-vs-kkr-m15',
+    data: {
+      homeTeam: 'Royal Challengers Bengaluru',
+      awayTeam: 'Kolkata Knight Riders',
+      kickoff: '2026-04-11T14:00:00Z',
+      competition: 'IPL 2026 · Match 15',
+      venue: 'M. Chinnaswamy Stadium, Bengaluru',
+      matchContext: 'Defending champions KKR travel to RCB\'s fortress',
+      featuredBookmakers: ['betway', '10bet', 'hollywoodbets', 'playa'],
+    },
+  },
+  {
+    slug: 'ipl-2026-dc-vs-rr-m16',
+    data: {
+      homeTeam: 'Delhi Capitals',
+      awayTeam: 'Rajasthan Royals',
+      kickoff: '2026-04-12T10:00:00Z',
+      competition: 'IPL 2026 · Match 16',
+      venue: 'Arun Jaitley Stadium, Delhi',
+      featuredBookmakers: ['betway', '10bet', 'hollywoodbets'],
+    },
+  },
+  {
+    slug: 'ipl-2026-srh-vs-pbks-m17',
+    data: {
+      homeTeam: 'Sunrisers Hyderabad',
+      awayTeam: 'Punjab Kings',
+      kickoff: '2026-04-13T14:00:00Z',
+      competition: 'IPL 2026 · Match 17',
+      venue: 'Rajiv Gandhi International Stadium, Hyderabad',
+      featuredBookmakers: ['betway', '10bet', 'hollywoodbets'],
+    },
+  },
+  {
+    slug: 'ipl-2026-gt-vs-lsg-m18',
+    data: {
+      homeTeam: 'Gujarat Titans',
+      awayTeam: 'Lucknow Super Giants',
+      kickoff: '2026-04-14T14:00:00Z',
+      competition: 'IPL 2026 · Match 18',
+      venue: 'Narendra Modi Stadium, Ahmedabad',
+      matchContext: 'Battle of the newer franchises — GT and LSG have split their last four',
+      featuredBookmakers: ['betway', '10bet', 'hollywoodbets', 'playa'],
+    },
+  },
   // England Tour of SA — ODI Series
   {
     slug: 'proteas-vs-england-1st-odi-2026',
