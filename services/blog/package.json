@@ -6,7 +6,8 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "seed:cricket": "ts-node-dev --transpile-only src/scripts/seed-betwise-cricket.ts"
+    "seed:cricket": "ts-node-dev --transpile-only src/scripts/seed-betwise-cricket.ts",
+    "seed:football": "ts-node-dev --transpile-only src/scripts/seed-safootball.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.36.3",

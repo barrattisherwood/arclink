@@ -33,6 +33,22 @@ const RUGBY_COMPETITIONS = [
   { path: '/api/flashscore/rugby-union/world:8/super-rugby:Stv0V7h5',               name: 'Super Rugby' },
 ];
 
+const FOOTBALL_COMPETITIONS = [
+  // SA domestic — confirmed live 6 April 2026
+  { path: '/api/flashscore/football/south-africa:175/betway-premiership:WYFXQ1KH', name: 'PSL' },
+  { path: '/api/flashscore/football/south-africa:175/nedbank-cup:WMffLgMb',        name: 'Nedbank Cup' },
+  { path: '/api/flashscore/football/south-africa:175/carling-knockout:t6G9wMZN',   name: 'Carling Knockout' },
+  { path: '/api/flashscore/football/south-africa:175/mtn-8-cup:hrHTRs5B',          name: 'MTN 8' },
+  // African — confirmed live 10 April 2026
+  { path: '/api/flashscore/football/africa:1/caf-champions-league:EcZwBi3N',       name: 'CAF Champions League' },
+  { path: '/api/flashscore/football/africa:1/africa-cup-of-nations:8bP2bXmH',      name: 'AFCON' },
+  { path: '/api/flashscore/football/africa:1/cosafa-cup:tAF6Rzpl',                 name: 'COSAFA Cup' },
+  // European — confirmed live 10 April 2026
+  { path: '/api/flashscore/football/england:198/premier-league:dYlOSQOD',          name: 'Premier League' },
+  { path: '/api/flashscore/football/europe:6/champions-league:xGrwqq16',           name: 'Champions League' },
+  { path: '/api/flashscore/football/europe:6/europa-league:ClDjv3V5',              name: 'Europa League' },
+];
+
 async function fetchFixtures(
   competitions: Array<{ path: string; name: string }>,
   daysAhead: number,
@@ -150,6 +166,13 @@ export function startFixtureScheduler(): void {
       await syncFixtures('betwise-rugby', rugbyFixtures);
     } catch (err) {
       console.error('[FixtureScheduler] Rugby sync failed:', err);
+    }
+
+    try {
+      const footballFixtures = await fetchFixtures(FOOTBALL_COMPETITIONS, 14);
+      await syncFixtures('safootball', footballFixtures);
+    } catch (err) {
+      console.error('[FixtureScheduler] Football sync failed:', err);
     }
 
     console.log('[FixtureScheduler] Tuesday run complete');

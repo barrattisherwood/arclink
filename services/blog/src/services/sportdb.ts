@@ -4,8 +4,53 @@ const BASE = 'https://api.sportdb.dev';
 const KEY = process.env['SPORTDB_API_KEY']!;
 const HEADERS = () => ({ 'X-API-Key': KEY });
 
-// Competition endpoints confirmed live 6 April 2026
+// Competition endpoints confirmed live 10 April 2026
 const COMPETITIONS: Record<string, Array<{ path: string; name: string }>> = {
+  football: [
+    // SA domestic — confirmed live 6 April 2026
+    {
+      path: '/api/flashscore/football/south-africa:175/betway-premiership:WYFXQ1KH',
+      name: 'PSL',
+    },
+    {
+      path: '/api/flashscore/football/south-africa:175/nedbank-cup:WMffLgMb',
+      name: 'Nedbank Cup',
+    },
+    {
+      path: '/api/flashscore/football/south-africa:175/carling-knockout:t6G9wMZN',
+      name: 'Carling Knockout',
+    },
+    {
+      path: '/api/flashscore/football/south-africa:175/mtn-8-cup:hrHTRs5B',
+      name: 'MTN 8',
+    },
+    // African — confirmed live 10 April 2026
+    {
+      path: '/api/flashscore/football/africa:1/caf-champions-league:EcZwBi3N',
+      name: 'CAF Champions League',
+    },
+    {
+      path: '/api/flashscore/football/africa:1/africa-cup-of-nations:8bP2bXmH',
+      name: 'AFCON',
+    },
+    {
+      path: '/api/flashscore/football/africa:1/cosafa-cup:tAF6Rzpl',
+      name: 'COSAFA Cup',
+    },
+    // European — confirmed live 10 April 2026
+    {
+      path: '/api/flashscore/football/england:198/premier-league:dYlOSQOD',
+      name: 'Premier League',
+    },
+    {
+      path: '/api/flashscore/football/europe:6/champions-league:xGrwqq16',
+      name: 'Champions League',
+    },
+    {
+      path: '/api/flashscore/football/europe:6/europa-league:ClDjv3V5',
+      name: 'Europa League',
+    },
+  ],
   rugby_union: [
     {
       path: '/api/flashscore/rugby-union/world:8/united-rugby-championship:jBHqXTNh',

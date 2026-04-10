@@ -8,7 +8,8 @@
     "start": "node dist/index.js",
     "seed:dlc": "ts-node-dev --transpile-only src/scripts/seed-dlc-townplanning.ts",
     "seed:rugby": "ts-node-dev --transpile-only src/scripts/seed-betwise-rugby.ts",
-    "seed:cricket": "ts-node-dev --transpile-only src/scripts/seed-betwise-cricket.ts"
+    "seed:cricket": "ts-node-dev --transpile-only src/scripts/seed-betwise-cricket.ts",
+    "seed:football": "ts-node-dev --transpile-only src/scripts/seed-safootball.ts"
   },
   "dependencies": {
     "axios": "^1.15.0",
