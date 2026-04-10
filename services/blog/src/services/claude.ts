@@ -48,36 +48,41 @@ function buildDialogueUserMessage(
 ): string {
   const allPersonas = Array.from(tenant.blog_persona_prompts?.keys() ?? []);
   const otherPersona = allPersonas.find(p => p !== personaTag) ?? null;
+  const p1 = personaTag.toUpperCase();
+  const p2 = otherPersona?.toUpperCase() ?? null;
 
   const tagInstruction = tenant.blog_predefined_tags.length > 0
     ? `Choose 3–5 tags from this list where relevant: ${tenant.blog_predefined_tags.join(', ')}.`
     : 'Generate 3–5 relevant tags for this post.';
 
-  return `Write a rugby betting analysis article with the following title:
+  return `Write a betting analysis article for the following title:
 
 "${title}"
+
+Site: ${tenant.name}
+Audience: ${tenant.blog_audience}
 
 ${recentTitles.length > 0 ? `Recent articles (avoid overlap):\n${recentTitles.map(t => `- ${t}`).join('\n')}` : ''}
 
 FORMAT — CRITICAL:
 This is a dialogue-format article. Two analysts take turns. Use these exact delimiters:
 
-[KWAGGA]
-...Kwagga's analysis here...
-[/KWAGGA]
-
-[MARCUS]
-...Marcus's analysis here...
-[/MARCUS]
-
+[${p1}]
+...${personaTag}'s analysis here...
+[/${p1}]
+${p2 ? `
+[${p2}]
+...${otherPersona}'s analysis here...
+[/${p2}]
+` : ''}
 Structure:
-1. [KWAGGA] opens with set piece / conditions angle (200–250 words)
-2. [MARCUS] responds with tactical / market angle, references Kwagga's point (200–250 words)
-3. [KWAGGA] closes with final bookmaker recommendation (80–100 words)
+1. [${p1}] opens with their primary analytical lens (200–250 words)
+${p2 ? `2. [${p2}] responds with their angle, references ${personaTag}'s point (200–250 words)
+3. [${p1}] closes with final bookmaker recommendation (80–100 words)` : '2. [${p1}] closes with bookmaker recommendation (80–100 words)'}
 
 Rules:
 - Each block stays fully in that persona's voice (defined in your system prompt)
-- Marcus may agree or push back on Kwagga — genuine dialogue, not just two monologues
+${p2 ? `- ${otherPersona} may agree or push back — genuine dialogue, not just two monologues` : ''}
 - Each block must include a "Bet at [Bookmaker]" CTA referencing a specific SA bookmaker
 - Never break the delimiter format — the frontend parser depends on it
 - Do not add any text outside the delimiters (no intro paragraph, no conclusion)
@@ -88,32 +93,29 @@ After all dialogue blocks, output a JSON block (fenced with \`\`\`json):
   "seo_description": "Meta description, max 155 characters",
   "excerpt": "One sentence summary of the fixture and key angle, max 200 chars",
   "categories": ["Fixture Previews"],
-  "tags": ["${personaTag}"${otherPersona ? `, "${otherPersona}"` : ''}, "urc", "fixture-preview"],
-  "unsplash_keyword": "south africa rugby",
+  "tags": ["${personaTag}"${otherPersona ? `, "${otherPersona}"` : ''}, "fixture-preview"],
+  "unsplash_keyword": "${tenant.blog_subject.split(' ').slice(0, 3).join(' ')}",
   "alt_text": "${title}"
 }
 
-${tagInstruction}
-Site: ${tenant.name}
-Audience: ${tenant.blog_audience}`;
+${tagInstruction}`;
 }
 
 function buildCombinedPersonaSystem(tenant: IBlogTenant): string {
-  const kwagga = tenant.blog_persona_prompts?.get('kwagga') ?? '';
-  const marcus = tenant.blog_persona_prompts?.get('marcus') ?? '';
+  const personas = Array.from(tenant.blog_persona_prompts?.entries() ?? []);
 
-  return `You are writing as TWO personas alternating within a single article.
+  const blocks = personas.map(([tag, prompt], i) =>
+    `PERSONA ${i + 1} — ${tag.toUpperCase()} (writes [${tag.toUpperCase()}] blocks):\n${prompt}`
+  ).join('\n\n');
 
-PERSONA 1 — KWAGGA (writes [KWAGGA] blocks):
-${kwagga}
+  const [p1, p2] = personas.map(([tag]) => tag);
 
-PERSONA 2 — MARCUS (writes [MARCUS] blocks):
-${marcus}
+  return `You are writing as ${personas.length === 1 ? 'ONE persona' : 'TWO personas alternating'} within a single article.
+
+${blocks}
 
 Switch fully into each persona when writing their blocks.
-The two voices must be genuinely distinct. Kwagga and Marcus are allowed
-to disagree and often do. Marcus should acknowledge Kwagga's point before
-building his own angle. Kwagga may be unmoved by Marcus's market analysis.`;
+The two voices must be genuinely distinct.${p1 && p2 ? ` ${p2} should acknowledge ${p1}'s point before building their own angle. ${p1} may be unmoved by ${p2}'s response.` : ''}`;
 }
 
 function buildWeeklyRoundupMessage(
@@ -121,24 +123,34 @@ function buildWeeklyRoundupMessage(
   title: string,
   fixtures: IFixtureEntry[],
 ): string {
+  const personas = Array.from(tenant.blog_persona_prompts?.keys() ?? []);
+  const [p1, p2] = personas;
+  const P1 = p1?.toUpperCase() ?? 'ANALYST1';
+  const P2 = p2?.toUpperCase() ?? null;
+
   const fixtureList = fixtures
     .map((f, i) => `${i + 1}. ${f.matchLabel} (${f.competition})`)
     .join('\n');
 
   const fixtureBlocks = fixtures
     .map(f => `[FIXTURE: ${f.matchLabel}]
-[KWAGGA]
-...Kwagga's analysis for ${f.matchLabel}...
-[/KWAGGA]
-[MARCUS]
-...Marcus's response for ${f.matchLabel}...
-[/MARCUS]
+[${P1}]
+...${p1}'s analysis for ${f.matchLabel}...
+[/${P1}]
+${P2 ? `[${P2}]
+...${p2}'s response for ${f.matchLabel}...
+[/${P2}]` : ''}
 [/FIXTURE]`)
     .join('\n\n');
 
-  return `Write a weekly rugby betting dialogue for the following title:
+  const personaTags = personas.map(p => `"${p}"`).join(', ');
+
+  return `Write a weekly ${tenant.sport_label || 'sports'} betting dialogue for the following title:
 
 "${title}"
+
+Site: ${tenant.name}
+Audience: ${tenant.blog_audience}
 
 This weekend's fixtures to cover:
 ${fixtureList}
@@ -148,30 +160,23 @@ FORMAT — CRITICAL. For each fixture produce one exchange using these exact del
 ${fixtureBlocks}
 
 Rules per fixture:
-- Kwagga opens (150–180 words): set piece, conditions, provincial angle. Dry, authoritative.
-- Marcus responds (150–180 words): defensive structure and market angle. May agree or push back — genuine dialogue.
-- Marcus must reference Kwagga's point by name in his response.
+- ${p1 ?? 'Analyst 1'} opens (150–180 words): their primary analytical lens. Authoritative.
+${P2 ? `- ${p2} responds (150–180 words): their angle. May agree or push back — genuine dialogue.
+- ${p2} must reference ${p1}'s point by name in their response.` : ''}
 - Each speaker ends their block with one "Bet at [Bookmaker]" CTA — a specific SA bookmaker.
 - Use different bookmakers across the roundup where possible.
 - Valid bookmakers: Hollywoodbets, Betway, 10bet, Supabets, Sportingbet, Playa, WSB.
 
-Persona reminder:
-- Kwagga: dry SA rugby authority, set-piece obsessed, conditions-first
-- Marcus: tactical precision, market inefficiency lens, sardonic about odds
-
 After all fixture blocks, output a JSON block (fenced with \`\`\`json):
 {
-  "seo_title": "Weekend URC betting preview max 60 chars",
+  "seo_title": "Weekend ${tenant.sport_label || 'sports'} betting preview max 60 chars",
   "seo_description": "Meta description max 155 chars",
   "excerpt": "Brief summary of what this roundup covers, max 200 chars",
   "categories": ["Fixture Previews"],
-  "tags": ["kwagga", "marcus", "urc", "fixture-preview", "weekly-roundup"],
-  "unsplash_keyword": "south africa rugby",
+  "tags": [${personaTags}, "fixture-preview", "weekly-roundup"],
+  "unsplash_keyword": "${tenant.sport_label ? tenant.sport_label.toLowerCase() + ' match' : 'sports betting'}",
   "alt_text": "${title}"
-}
-
-Site: ${tenant.name}
-Audience: ${tenant.blog_audience}`;
+}`;
 }
 
 export interface GeneratedPost {

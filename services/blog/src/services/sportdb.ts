@@ -46,6 +46,10 @@ const COMPETITIONS: Record<string, Array<{ path: string; name: string }>> = {
       path: '/api/flashscore/cricket/south-africa:175/csa-t20-challenge:AVrQexSr',
       name: 'CSA T20 Challenge',
     },
+    {
+      path: '/api/flashscore/cricket/india:93/ipl:KfDQ6H86',
+      name: 'IPL',
+    },
   ],
 };
 
