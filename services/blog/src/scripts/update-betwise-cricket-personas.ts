@@ -1,9 +1,8 @@
 import 'dotenv/config';
 import mongoose from 'mongoose';
-import { randomUUID, randomBytes, createHash } from 'crypto';
 import { BlogTenant } from '../models/BlogTenant';
 
-// ─── PERSONA SYSTEM PROMPTS ───────────────────────────────────────────────────
+const TENANT_ID = 'dca2ef78-e282-429f-a410-f8ee246cc212';
 
 const DEON_PROMPT = `You are Deon Ferreira, SA cricket correspondent for SA Cricket Bets (sacricketbets.co.za).
 You grew up in Kimberley and played provincial cricket for the Knights for eight seasons —
@@ -148,105 +147,41 @@ Address line movement if there has been any. Arrive at the Hollywoodbets recomme
 with specific market and data-backed reasoning. Close with a precise statement of
 position. Approximately 175 words per block in the weekly roundup format.`;
 
-// ─── SEED FUNCTION ────────────────────────────────────────────────────────────
+async function run() {
+  const uri = process.env.MONGODB_URI;
+  if (!uri) { console.error('MONGODB_URI not set'); process.exit(1); }
 
-async function seed(): Promise<void> {
-  const mongoUri = process.env.MONGODB_URI;
-  if (!mongoUri) throw new Error('MONGODB_URI is not set');
+  await mongoose.connect(uri);
 
-  await mongoose.connect(mongoUri);
+  const result = await BlogTenant.findOneAndUpdate(
+    { id: TENANT_ID },
+    {
+      $set: {
+        blog_persona_prompts: new Map([
+          ['deon', DEON_PROMPT],
+          ['priya', PRIYA_PROMPT],
+        ]),
+        blog_predefined_tags: [
+          'proteas', 'sa20', 'csa-t20', 'one-day-cup', 'test-cricket',
+          'ipl-context', 'odi', 't20', 'fixture-preview', 'odds-analysis',
+          'value-bets', 'pitch-conditions',
+          'deon',   // ← persona routing tag
+          'priya',  // ← persona routing tag
+        ],
+      },
+    },
+    { new: true },
+  );
 
-  const existing = await BlogTenant.findOne({ name: 'BetWise Cricket' });
-  if (existing) {
-    console.log('BetWise Cricket tenant already exists — skipping.');
-    console.log('Tenant ID:', existing.id);
-    await mongoose.disconnect();
-    return;
+  if (!result) {
+    console.error('Tenant not found:', TENANT_ID);
+    process.exit(1);
   }
 
-  const plaintextKey = randomBytes(32).toString('hex');
-  const hashedKey = createHash('sha256').update(plaintextKey).digest('hex');
-
-  const tenant = await BlogTenant.create({
-    id: randomUUID(),
-    api_key: hashedKey,
-    name: 'BetWise Cricket',
-    allowed_origin: 'https://www.sacricketbets.co.za',
-    active: true,
-
-    blog_subject:
-      'South African cricket betting — Proteas test and ODI previews, SA20 odds analysis, ' +
-      'venue and pitch condition breakdowns, bookmaker comparisons, and value bet ' +
-      'identification for SA and international cricket markets',
-
-    blog_audience:
-      'South African cricket bettors aged 25–55 who follow the Proteas, SA20, and touring ' +
-      'series. Comfortable with decimal odds. Want informed pitch and conditions analysis ' +
-      'alongside the betting angle, not just score predictions',
-
-    blog_tone:
-      'Knowledgeable SA cricket analysis connecting tactical and statistical insight to ' +
-      'betting decisions. Never fabricates statistics. Always connects insight to specific ' +
-      'bookmaker odds.',
-
-    blog_word_count: 450,
-    blog_cadence: 2,
-    blog_publish_day: 5,   // Friday
-    blog_publish_hour: 7,  // 07:00 UTC
-
-    blog_predefined_tags: [
-      'proteas',
-      'sa20',
-      'csa-t20',
-      'one-day-cup',
-      'test-cricket',
-      'ipl-context',
-      'odi',
-      't20',
-      'fixture-preview',
-      'odds-analysis',
-      'value-bets',
-      'pitch-conditions',
-      'deon',    // ← persona routing tag
-      'priya',   // ← persona routing tag
-    ],
-
-    blog_predefined_categories: [
-      'Fixture Previews',
-      'Odds Analysis',
-      'Bookmaker Reviews',
-      'Cricket Betting Guide',
-    ],
-
-    blog_persona_prompts: new Map([
-      ['deon', DEON_PROMPT],
-      ['priya', PRIYA_PROMPT],
-    ]),
-
-    blog_canonical_base: 'https://www.sacricketbets.co.za',
-    siteId: 'betwise-cricket',
-    sport_key: 'cricket',
-    sport_label: 'Cricket',
-    created_at: new Date(),
-  });
-
-  console.log('');
-  console.log('✓ BetWise Cricket tenant created successfully.');
-  console.log('─────────────────────────────────────────────────────');
-  console.log('Tenant ID:  ', tenant.id);
-  console.log('API Key:    ', plaintextKey);
-  console.log('─────────────────────────────────────────────────────');
-  console.log('⚠  Save the API key now — it cannot be recovered.');
-  console.log('');
-  console.log('Add these to Vercel environment variables (cricket project):');
-  console.log(`  ARCLINK_BLOG_TENANT_ID=${tenant.id}`);
-  console.log(`  ARCLINK_BLOG_API_KEY=<the plaintext key above>`);
-  console.log('');
-
-  await mongoose.disconnect();
+  console.log(`✓ Updated "${result.name}"`);
+  console.log(`  Personas: ${Array.from(result.blog_persona_prompts.keys()).join(', ')}`);
+  console.log(`  Tags: ${result.blog_predefined_tags.join(', ')}`);
+  process.exit(0);
 }
 
-seed().catch((err) => {
-  console.error(err);
-  process.exit(1);
-});
+run().catch(err => { console.error(err); process.exit(1); });
