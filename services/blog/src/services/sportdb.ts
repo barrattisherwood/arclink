@@ -81,22 +81,36 @@ export async function fetchUpcomingFixtures(
         continue;
       }
 
-      // Step 2: fetch fixtures for the first (current) season
-      const fixturesPath = seasons[0].fixtures; // e.g. /api/flashscore/.../2025-2026/fixtures?page=1
-      const { data: rows } = await axios.get<any[]>(
-        `${BASE}${fixturesPath}`,
-        { headers: HEADERS() }
-      );
+      // Step 2: try up to 3 seasons — the API may list a future season first with no
+      // current fixtures, so we scan until we find matches within the window.
+      const now = new Date();
+      let found = false;
+      for (const season of seasons.slice(0, 3)) {
+        const { data: rows } = await axios.get<any[]>(
+          `${BASE}${season.fixtures}`,
+          { headers: HEADERS() }
+        );
 
-      const upcoming = (rows ?? [])
-        .filter(f => {
-          if (!f.startDateTimeUtc) return false;
-          const kickoff = new Date(f.startDateTimeUtc);
-          return kickoff > new Date() && kickoff <= cutoff;
-        })
-        .map(f => mapFixture(f, comp.name));
+        const upcoming = (rows ?? [])
+          .filter(f => {
+            if (!f.startDateTimeUtc) return false;
+            const kickoff = new Date(f.startDateTimeUtc);
+            return kickoff > now && kickoff <= cutoff;
+          })
+          .map(f => mapFixture(f, comp.name));
 
-      fixtures.push(...upcoming);
+        if (upcoming.length) {
+          fixtures.push(...upcoming);
+          found = true;
+          break;
+        }
+
+        // If every fixture in this season is already past, no point checking older ones
+        const allPast = (rows ?? []).every(f => !f.startDateTimeUtc || new Date(f.startDateTimeUtc) <= now);
+        if (allPast && rows?.length) break;
+      }
+
+      if (!found) console.log(`[SportDB] No upcoming fixtures for ${comp.name}`);
     } catch (err) {
       console.error(`[SportDB] Failed for ${comp.name}:`, err);
     }
