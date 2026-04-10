@@ -14,6 +14,7 @@ export class BlogApiService {
 
   roundupEnabled = false;
   sportLabel = '';
+  personaOptions: Array<{ value: string; label: string }> = [];
 
   setActiveTenant(tenantId: string): void {
     this.tenantId = tenantId;
@@ -131,13 +132,14 @@ export class BlogApiService {
   }
 
   checkTenant(siteId: string) {
-    return this.http.get<{ exists: boolean; tenantId?: string; roundupEnabled?: boolean; sportLabel?: string }>(
+    return this.http.get<{ exists: boolean; tenantId?: string; roundupEnabled?: boolean; sportLabel?: string; personas?: Array<{ value: string; label: string }> }>(
       `${this.base}/tenant/${siteId}`
     ).pipe(
       tap(res => {
         if (res.tenantId) this.setActiveTenant(res.tenantId);
         this.roundupEnabled = res.roundupEnabled ?? false;
         this.sportLabel = res.sportLabel ?? '';
+        this.personaOptions = res.personas ?? [];
       })
     );
   }

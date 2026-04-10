@@ -73,8 +73,9 @@ import { TitleSuggestion, QueueItem, Post } from '../../../models/blog.model';
             <select [(ngModel)]="selectedPersona"
                     class="flex-1 px-2 py-1.5 text-xs rounded-md bg-[#1a1a1a] border border-[#2a2a2a] text-white cursor-pointer">
               <option value="">No persona (standard)</option>
-              <option value="kwagga">Kwagga van der Berg</option>
-              <option value="marcus">Marcus Webb</option>
+              @for (p of api.personaOptions; track p.value) {
+                <option [value]="p.value">{{ p.label }}</option>
+              }
             </select>
             <button (click)="addSelected()"
                     class="px-3 py-1.5 text-xs rounded-md bg-[#1a1a1a] hover:bg-[#222] text-white cursor-pointer transition-colors whitespace-nowrap">

@@ -37,11 +37,17 @@ router.get('/:siteId', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
+  const personas = Array.from(tenant.blog_persona_prompts?.keys() ?? []).map(key => ({
+    value: key,
+    label: key.charAt(0).toUpperCase() + key.slice(1),
+  }));
+
   res.json({
     exists: true,
     tenantId: tenant.id,
     roundupEnabled: !!(tenant.sport_key),
     sportLabel: tenant.sport_label || '',
+    personas,
   });
 });
 

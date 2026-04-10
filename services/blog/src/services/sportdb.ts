@@ -24,6 +24,29 @@ const COMPETITIONS: Record<string, Array<{ path: string; name: string }>> = {
       name: 'Super Rugby',
     },
   ],
+  // Cricket endpoints confirmed live 10 April 2026
+  cricket: [
+    {
+      path: '/api/flashscore/cricket/south-africa:175/sa20:YVsYtcmb',
+      name: 'SA20',
+    },
+    {
+      path: '/api/flashscore/cricket/world:8/test-series:AkPEBy3K',
+      name: 'Test Series',
+    },
+    {
+      path: '/api/flashscore/cricket/world:8/one-day-international:OG7nzYAD',
+      name: 'ODI Series',
+    },
+    {
+      path: '/api/flashscore/cricket/world:8/twenty20-international:2i0B6Zul',
+      name: 'T20 International',
+    },
+    {
+      path: '/api/flashscore/cricket/south-africa:175/csa-t20-challenge:AVrQexSr',
+      name: 'CSA T20 Challenge',
+    },
+  ],
 };
 
 export interface SportDbFixture {
