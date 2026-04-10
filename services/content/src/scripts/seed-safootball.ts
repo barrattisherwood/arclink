@@ -5,7 +5,7 @@ import { ContentTenant } from '../models/Tenant';
 import { ContentType } from '../models/ContentType';
 import { ContentEntry } from '../models/ContentEntry';
 
-const SITE_ID = 'safootball';
+const SITE_ID = 'betwise-football';
 const RAW_API_KEY = 'safootball-key-change-me';
 
 const fixtureContentType = {

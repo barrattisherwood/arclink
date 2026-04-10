@@ -138,7 +138,12 @@ async function seed(): Promise<void> {
 
   const existing = await BlogTenant.findOne({ name: 'SA Football Bets' });
   if (existing) {
-    console.log('SA Football Bets tenant already exists — skipping.');
+    if (existing.siteId !== 'betwise-football') {
+      await BlogTenant.updateOne({ _id: existing._id }, { $set: { siteId: 'betwise-football' } });
+      console.log('Updated siteId → betwise-football');
+    } else {
+      console.log('SA Football Bets tenant already exists — skipping.');
+    }
     console.log('Tenant ID:', existing.id);
     await mongoose.disconnect();
     return;
@@ -206,7 +211,7 @@ async function seed(): Promise<void> {
     ]),
 
     blog_canonical_base: 'https://www.safootballbets.co.za',
-    siteId: 'safootball',
+    siteId: 'betwise-football',
     sport_key: 'football',
     sport_label: 'Football',
     created_at: new Date(),
@@ -223,7 +228,7 @@ async function seed(): Promise<void> {
   console.log('Add these to Vercel environment variables (football project):');
   console.log(`  ARCLINK_BLOG_TENANT_ID=${tenant.id}`);
   console.log(`  ARCLINK_BLOG_API_KEY=<the plaintext key above>`);
-  console.log(`  ARCLINK_SITE_ID=safootball`);
+  console.log(`  ARCLINK_SITE_ID=betwise-football`);
   console.log('');
 
   await mongoose.disconnect();

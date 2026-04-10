@@ -170,7 +170,7 @@ export function startFixtureScheduler(): void {
 
     try {
       const footballFixtures = await fetchFixtures(FOOTBALL_COMPETITIONS, 14);
-      await syncFixtures('safootball', footballFixtures);
+      await syncFixtures('betwise-football', footballFixtures);
     } catch (err) {
       console.error('[FixtureScheduler] Football sync failed:', err);
     }
