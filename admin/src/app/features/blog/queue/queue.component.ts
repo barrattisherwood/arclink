@@ -17,7 +17,7 @@ import { TitleSuggestion, QueueItem, Post } from '../../../models/blog.model';
     <div class="bg-[#111] rounded-lg border border-[#1a1a1a] p-4 mb-6 flex items-center justify-between">
       <div class="flex-1 min-w-0 mr-4">
         <p class="text-sm font-medium text-white">Weekly Roundup</p>
-        <p class="text-xs text-[#555] mt-0.5">Auto-fetch upcoming fixtures and generate a Kwagga/Marcus dialogue draft</p>
+        <p class="text-xs text-[#555] mt-0.5">Auto-fetch upcoming fixtures and generate a {{ api.personaOptions[0]?.label ?? '' }}/{{ api.personaOptions[1]?.label ?? '' }} dialogue draft</p>
         @if (roundupResult()) {
           <p class="text-xs text-green-400 mt-1">
             Draft created: "{{ roundupResult()!.title }}" —
