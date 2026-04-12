@@ -10,6 +10,15 @@ export interface ITitleQueue extends Document {
   persona_tag: string | null;
   fixtures: IFixtureEntry[];
   is_weekly_roundup: boolean;
+  // Scheduling fields (Phase 1 calendar)
+  content_type: 'article' | 'weekly-roundup';
+  schedule_status: 'pending' | 'generating' | 'generated' | 'failed';
+  generate_at: Date | null;
+  publish_at: Date | null;
+  fixture_date: string | null;
+  fixture_label: string | null;
+  competition: string | null;
+  generated_post_id: string | null;
   created_at: Date;
 }
 
@@ -21,6 +30,14 @@ const TitleQueueSchema = new Schema<ITitleQueue>({
   notes: { type: String, default: null },
   persona_tag: { type: String, default: null },
   is_weekly_roundup: { type: Boolean, default: false },
+  content_type: { type: String, enum: ['article', 'weekly-roundup'], default: 'article' },
+  schedule_status: { type: String, enum: ['pending', 'generating', 'generated', 'failed'], default: 'pending' },
+  generate_at: { type: Date, default: null },
+  publish_at: { type: Date, default: null },
+  fixture_date: { type: String, default: null },
+  fixture_label: { type: String, default: null },
+  competition: { type: String, default: null },
+  generated_post_id: { type: String, default: null },
   fixtures: {
     type: [{
       homeTeam: { type: String, required: true },
@@ -36,5 +53,6 @@ const TitleQueueSchema = new Schema<ITitleQueue>({
 });
 
 TitleQueueSchema.index({ tenant_id: 1, priority: 1 });
+TitleQueueSchema.index({ schedule_status: 1, generate_at: 1 });
 
 export const TitleQueue = model<ITitleQueue>('TitleQueue', TitleQueueSchema);

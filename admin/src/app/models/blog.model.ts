@@ -22,6 +22,27 @@ export interface QueueItem {
   created_at: string;
 }
 
+export type CalendarEventStatus = 'pending' | 'generating' | 'generated' | 'failed';
+export type CalendarContentType = 'article' | 'weekly-roundup';
+
+export interface CalendarEvent {
+  id: string;
+  tenant_id: string;
+  title: string;
+  notes: string | null;
+  persona_tag: string | null;
+  fixtures: FixtureEntry[];
+  content_type: CalendarContentType;
+  schedule_status: CalendarEventStatus;
+  generate_at: string;
+  publish_at: string | null;
+  fixture_date: string | null;
+  fixture_label: string | null;
+  competition: string | null;
+  generated_post_id: string | null;
+  created_at: string;
+}
+
 export interface DialogueBlock {
   persona: string;
   content: string;

@@ -34,6 +34,9 @@ import { ContentType } from '../../models/content-type.model';
           <a [routerLink]="siteBase() + '/blog/published'"
              routerLinkActive="bg-[#1a1a1a] text-white"
              class="nav-link">Published</a>
+          <a [routerLink]="siteBase() + '/blog/calendar'"
+             routerLinkActive="bg-[#1a1a1a] text-white"
+             class="nav-link">Calendar</a>
         </div>
         }
 

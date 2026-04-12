@@ -16,6 +16,10 @@ export class BlogApiService {
   sportLabel = '';
   personaOptions: Array<{ value: string; label: string }> = [];
 
+  get activeTenantId(): string {
+    return this.tenantId;
+  }
+
   setActiveTenant(tenantId: string): void {
     this.tenantId = tenantId;
   }

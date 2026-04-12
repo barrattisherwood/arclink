@@ -8,8 +8,10 @@ import prioritiseRouter from './routes/prioritise';
 import suggestRouter from './routes/suggest';
 import feedRouter from './routes/feed';
 import tenantRouter from './routes/tenant';
+import calendarRouter from './routes/calendar';
 import { startScheduler } from './scheduler';
 import './scheduler-weekly-roundup';
+import './scheduler-generation';
 
 const app = express();
 const PORT = process.env.PORT ?? 3002;
@@ -51,6 +53,7 @@ app.use('/generate/:tenantId', generateRouter);
 app.use('/prioritise/:tenantId', prioritiseRouter);
 app.use('/suggest/:tenantId', suggestRouter);
 app.use('/tenant', tenantRouter);
+app.use('/calendar/:tenantId', calendarRouter);
 
 async function start(): Promise<void> {
   const mongoUri = process.env.MONGODB_URI;
