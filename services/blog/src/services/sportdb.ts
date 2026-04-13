@@ -5,7 +5,7 @@ const KEY = process.env['SPORTDB_API_KEY']!;
 const HEADERS = () => ({ 'X-API-Key': KEY });
 
 // Competition endpoints confirmed live 10 April 2026
-const COMPETITIONS: Record<string, Array<{ path: string; name: string }>> = {
+const COMPETITIONS: Record<string, Array<{ path: string; name: string; surface?: string }>> = {
   football: [
     // SA domestic — confirmed live 6 April 2026
     {
@@ -69,6 +69,31 @@ const COMPETITIONS: Record<string, Array<{ path: string; name: string }>> = {
       name: 'Super Rugby',
     },
   ],
+  // Tennis — ATP Singles confirmed live 13 April 2026
+  // WTA mirrors use wta-singles:5725 with same slug/id pattern
+  tennis: [
+    // Grand Slams — ATP
+    { path: '/api/flashscore/tennis/atp-singles:5724/australian-open:MP4jLdJh', name: 'Australian Open', surface: 'hard' },
+    { path: '/api/flashscore/tennis/atp-singles:5724/french-open:tItR6sEf',    name: 'French Open',     surface: 'clay' },
+    { path: '/api/flashscore/tennis/atp-singles:5724/wimbledon:nZi4fKds',      name: 'Wimbledon',       surface: 'grass' },
+    { path: '/api/flashscore/tennis/atp-singles:5724/us-open:65k5lHxU',        name: 'US Open',         surface: 'hard' },
+    // ATP Masters 1000
+    { path: '/api/flashscore/tennis/atp-singles:5724/indian-wells:EuEPYusS',   name: 'Indian Wells',    surface: 'hard' },
+    { path: '/api/flashscore/tennis/atp-singles:5724/miami:lYvC7qBE',          name: 'Miami Open',      surface: 'hard' },
+    { path: '/api/flashscore/tennis/atp-singles:5724/monte-carlo:IsxHSx6l',    name: 'Monte Carlo',     surface: 'clay' },
+    { path: '/api/flashscore/tennis/atp-singles:5724/madrid:632P4ana',         name: 'Madrid Open',     surface: 'clay' },
+    { path: '/api/flashscore/tennis/atp-singles:5724/rome:xIkUr2vO',           name: 'Rome',            surface: 'clay' },
+    { path: '/api/flashscore/tennis/atp-singles:5724/cincinnati:vo6KqUyn',     name: 'Cincinnati',      surface: 'hard' },
+    { path: '/api/flashscore/tennis/atp-singles:5724/paris:pOtlc1qr',          name: 'Paris Masters',   surface: 'indoor-hard' },
+    { path: '/api/flashscore/tennis/atp-singles:5724/finals-turin:MeRVE9s8',   name: 'ATP Finals',      surface: 'indoor-hard' },
+    // Grand Slams — WTA
+    { path: '/api/flashscore/tennis/wta-singles:5725/australian-open:0G3fKGYb', name: 'Australian Open (W)', surface: 'hard' },
+    { path: '/api/flashscore/tennis/wta-singles:5725/wimbledon:hl1W8RZs',       name: 'Wimbledon (W)',       surface: 'grass' },
+    { path: '/api/flashscore/tennis/wta-singles:5725/us-open:6g0xhggi',         name: 'US Open (W)',         surface: 'hard' },
+    // TODO: confirm WTA French Open ID (not found in initial scan — may be 'french-open' slug)
+    // Davis Cup
+    { path: '/api/flashscore/tennis/atp-singles:5724/davis-cup-world-group:fNKFHEIH', name: 'Davis Cup', surface: 'hard' },
+  ],
   // Cricket endpoints confirmed live 10 April 2026
   cricket: [
     {
@@ -104,8 +129,10 @@ export interface SportDbFixture {
   awayTeam: string;
   competition: string;
   venue: string;
-  kickoff: string;   // ISO string
+  kickoff: string;    // ISO string
   matchLabel: string;
+  round?: string;     // e.g. "Final", "Semi-final", "Round of 16" (tennis/knockout sports)
+  surface?: string;   // e.g. "clay", "grass", "hard", "indoor-hard" (tennis)
 }
 
 export async function fetchUpcomingFixtures(
@@ -146,7 +173,7 @@ export async function fetchUpcomingFixtures(
             const kickoff = new Date(f.startDateTimeUtc);
             return kickoff > now && kickoff <= cutoff;
           })
-          .map(f => mapFixture(f, comp.name));
+          .map(f => mapFixture(f, comp.name, comp.surface));
 
         if (upcoming.length) {
           fixtures.push(...upcoming);
@@ -168,7 +195,7 @@ export async function fetchUpcomingFixtures(
   return fixtures;
 }
 
-function mapFixture(f: any, competitionName: string): SportDbFixture {
+function mapFixture(f: any, competitionName: string, surface?: string): SportDbFixture {
   const kickoff = new Date(f.startDateTimeUtc);
   const day = kickoff.toLocaleDateString('en-ZA', {
     weekday: 'short', timeZone: 'Africa/Johannesburg'
@@ -180,6 +207,7 @@ function mapFixture(f: any, competitionName: string): SportDbFixture {
   const home = f.homeName || 'TBC';
   const away = f.awayName || 'TBC';
 
+  const roundLabel = f.round ? ` · ${f.round}` : '';
   return {
     id: f.eventId || '',
     homeTeam: home,
@@ -187,6 +215,8 @@ function mapFixture(f: any, competitionName: string): SportDbFixture {
     competition: competitionName,
     venue: 'TBC',
     kickoff: f.startDateTimeUtc,
-    matchLabel: `${home} vs ${away} · ${day} ${time}`,
+    matchLabel: `${home} vs ${away}${roundLabel} · ${day} ${time}`,
+    round: f.round || undefined,
+    surface,
   };
 }
