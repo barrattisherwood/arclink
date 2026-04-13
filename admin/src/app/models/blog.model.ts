@@ -23,7 +23,15 @@ export interface QueueItem {
 }
 
 export type CalendarEventStatus = 'pending' | 'generating' | 'generated' | 'failed';
-export type CalendarContentType = 'article' | 'weekly-roundup';
+export type CalendarContentType =
+  | 'article'
+  | 'weekly-roundup'
+  | 'match-preview'
+  | 'season-preview'
+  | 'evergreen'
+  | 'tournament-window'
+  | 'post-match'
+  | 'bookmaker-review';
 
 export interface CalendarEvent {
   id: string;
@@ -40,6 +48,22 @@ export interface CalendarEvent {
   fixture_label: string | null;
   competition: string | null;
   generated_post_id: string | null;
+  created_at: string;
+}
+
+export interface ContentSuggestion {
+  id: string;
+  tenant_id: string;
+  title: string;
+  content_type: string;
+  persona_tag: string | null;
+  fixture_date: string | null;
+  fixture_label: string | null;
+  competition: string;
+  generate_at: string;
+  publish_at: string;
+  reason: string;
+  status: 'pending' | 'approved' | 'dismissed';
   created_at: string;
 }
 

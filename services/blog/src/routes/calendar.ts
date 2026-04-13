@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express';
 import { randomUUID } from 'crypto';
 import { requireAuth } from '../middleware/auth';
-import { TitleQueue } from '../models/TitleQueue';
+import { TitleQueue, CalendarContentType } from '../models/TitleQueue';
 import { IFixtureEntry } from '../models/Post';
 
 const router = Router({ mergeParams: true });
@@ -44,7 +44,7 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
     fixture_label?: string;
     competition?: string;
     fixtures?: IFixtureEntry[];
-    content_type?: 'article' | 'weekly-roundup';
+    content_type?: CalendarContentType;
   };
 
   if (!title || !title.trim()) {
@@ -131,7 +131,7 @@ router.patch('/:itemId', requireAuth, async (req: Request, res: Response): Promi
     fixture_label: string | null;
     competition: string | null;
     fixtures: IFixtureEntry[];
-    content_type: 'article' | 'weekly-roundup';
+    content_type: CalendarContentType;
   }>;
 
   if (title !== undefined) item.title = title.trim();

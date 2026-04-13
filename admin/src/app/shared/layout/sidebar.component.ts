@@ -3,6 +3,7 @@ import { RouterLink, RouterLinkActive, ActivatedRoute } from '@angular/router';
 import { AuthService } from '../../core/services/auth.service';
 import { ContentApiService } from '../../core/services/content-api.service';
 import { BlogApiService } from '../../core/services/blog-api.service';
+import { SuggestionsApiService } from '../../core/services/suggestions-api.service';
 import { ContentType } from '../../models/content-type.model';
 
 @Component({
@@ -37,6 +38,16 @@ import { ContentType } from '../../models/content-type.model';
           <a [routerLink]="siteBase() + '/blog/calendar'"
              routerLinkActive="bg-[#1a1a1a] text-white"
              class="nav-link">Calendar</a>
+          <a [routerLink]="siteBase() + '/blog/suggestions'"
+             routerLinkActive="bg-[#1a1a1a] text-white"
+             class="nav-link flex items-center justify-between">
+            <span>Suggestions</span>
+            @if (pendingSuggestions() > 0) {
+              <span class="text-[10px] font-semibold px-1.5 py-0.5 rounded-full bg-blue-600 text-white leading-none">
+                {{ pendingSuggestions() }}
+              </span>
+            }
+          </a>
         </div>
         }
 
@@ -98,12 +109,14 @@ import { ContentType } from '../../models/content-type.model';
 })
 export class SidebarComponent implements OnInit {
   auth = inject(AuthService);
-  private contentApi = inject(ContentApiService);
-  private blogApi = inject(BlogApiService);
-  private route = inject(ActivatedRoute);
+  private contentApi      = inject(ContentApiService);
+  private blogApi         = inject(BlogApiService);
+  private suggestionsApi  = inject(SuggestionsApiService);
+  private route           = inject(ActivatedRoute);
 
-  contentTypes = signal<ContentType[]>([]);
-  hasBlog = signal(false);
+  contentTypes       = signal<ContentType[]>([]);
+  hasBlog            = signal(false);
+  pendingSuggestions = signal(0);
 
   private get currentSiteId(): string | null {
     return this.route.snapshot.paramMap.get('siteId');
@@ -122,9 +135,19 @@ export class SidebarComponent implements OnInit {
         error: () => {}
       });
       this.blogApi.checkTenant(siteId).subscribe({
-        next: res => this.hasBlog.set(res.exists),
+        next: res => {
+          this.hasBlog.set(res.exists);
+          if (res.exists) this.loadSuggestionsCount();
+        },
         error: () => this.hasBlog.set(false),
       });
     }
+  }
+
+  private loadSuggestionsCount() {
+    this.suggestionsApi.getCount().subscribe({
+      next: res => this.pendingSuggestions.set(res.count),
+      error: () => {},
+    });
   }
 }

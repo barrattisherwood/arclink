@@ -1,6 +1,16 @@
 import { Schema, model, Document } from 'mongoose';
 import { IFixtureEntry } from './Post';
 
+export type CalendarContentType =
+  | 'article'
+  | 'weekly-roundup'
+  | 'match-preview'
+  | 'season-preview'
+  | 'evergreen'
+  | 'tournament-window'
+  | 'post-match'
+  | 'bookmaker-review';
+
 export interface ITitleQueue extends Document {
   id: string;
   tenant_id: string;
@@ -11,7 +21,7 @@ export interface ITitleQueue extends Document {
   fixtures: IFixtureEntry[];
   is_weekly_roundup: boolean;
   // Scheduling fields (Phase 1 calendar)
-  content_type: 'article' | 'weekly-roundup';
+  content_type: CalendarContentType;
   schedule_status: 'pending' | 'generating' | 'generated' | 'failed';
   generate_at: Date | null;
   publish_at: Date | null;
@@ -30,7 +40,7 @@ const TitleQueueSchema = new Schema<ITitleQueue>({
   notes: { type: String, default: null },
   persona_tag: { type: String, default: null },
   is_weekly_roundup: { type: Boolean, default: false },
-  content_type: { type: String, enum: ['article', 'weekly-roundup'], default: 'article' },
+  content_type: { type: String, enum: ['article', 'weekly-roundup', 'match-preview', 'season-preview', 'evergreen', 'tournament-window', 'post-match', 'bookmaker-review'], default: 'article' },
   schedule_status: { type: String, enum: ['pending', 'generating', 'generated', 'failed'], default: 'pending' },
   generate_at: { type: Date, default: null },
   publish_at: { type: Date, default: null },
