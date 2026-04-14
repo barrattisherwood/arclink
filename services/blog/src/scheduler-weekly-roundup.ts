@@ -48,7 +48,7 @@ export async function runWeeklyRoundup(tenant: IBlogTenant): Promise<void> {
   }
 
   // 2. Score and select
-  const selected = scoreAndSelectFixtures(raw);
+  const selected = scoreAndSelectFixtures(raw, tenant.sport_key);
 
   // 3. Build title
   const date = new Date().toLocaleDateString('en-ZA', {

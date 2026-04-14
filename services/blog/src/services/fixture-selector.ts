@@ -1,11 +1,26 @@
-import { SportDbFixture as ApiSportsFixture } from './sportdb';
+import { SportDbFixture } from './sportdb';
 
-const SA_TEAMS = [
+// ─── Football ────────────────────────────────────────────────────────────────
+
+const FOOTBALL_COMPETITION_SCORES: Record<string, number> = {
+  'Champions League': 50,
+  'Premier League': 45,
+  'PSL': 40, 'Betway Premiership': 40,
+  'Europa League': 35,
+  'AFCON': 35, 'Africa Cup of Nations': 35,
+  'CAF Champions League': 30,
+  'Nedbank Cup': 25, 'Carling Knockout': 25, 'MTN 8': 25,
+  'COSAFA Cup': 20,
+};
+
+// ─── Rugby ────────────────────────────────────────────────────────────────────
+
+const RUGBY_SA_TEAMS = [
   'Bulls', 'Stormers', 'Lions', 'Sharks', 'Cheetahs',
-  'South Africa', 'Springboks'
+  'South Africa', 'Springboks',
 ];
 
-const COMPETITION_SCORES: Record<string, number> = {
+const RUGBY_COMPETITION_SCORES: Record<string, number> = {
   'URC': 40, 'United Rugby Championship': 40,
   'Rugby Championship': 35,
   'Currie Cup': 30,
@@ -20,35 +35,66 @@ const SA_DERBIES = [
   ['Lions', 'Sharks'], ['Bulls', 'Stormers'],
 ];
 
+// ─── Tennis ──────────────────────────────────────────────────────────────────
+
+const TENNIS_COMPETITION_SCORES: Record<string, number> = {
+  'Australian Open': 50, 'French Open': 50, 'Wimbledon': 50, 'US Open': 50,
+  'Australian Open (W)': 50, 'Wimbledon (W)': 50, 'US Open (W)': 50,
+  'Indian Wells': 35, 'Miami Open': 35, 'Monte Carlo': 35,
+  'Madrid Open': 35, 'Rome': 35, 'Cincinnati': 35,
+  'Paris Masters': 35, 'ATP Finals': 40,
+  'Davis Cup': 25,
+};
+
+// ─── Cricket ─────────────────────────────────────────────────────────────────
+
+const CRICKET_COMPETITION_SCORES: Record<string, number> = {
+  'Test Series': 40,
+  'ODI Series': 35,
+  'T20 International': 30,
+  'SA20': 40,
+  'IPL': 35,
+  'CSA T20 Challenge': 25,
+};
+
+// ─── Selector ────────────────────────────────────────────────────────────────
+
 export function scoreAndSelectFixtures(
-  fixtures: ApiSportsFixture[],
-  max = 5
-): ApiSportsFixture[] {
+  fixtures: SportDbFixture[],
+  sport = 'football',
+  max = 5,
+): SportDbFixture[] {
+
+  const competitionScores =
+    sport === 'rugby_union' ? RUGBY_COMPETITION_SCORES :
+    sport === 'tennis'      ? TENNIS_COMPETITION_SCORES :
+    sport === 'cricket'     ? CRICKET_COMPETITION_SCORES :
+    FOOTBALL_COMPETITION_SCORES;
 
   const scored = fixtures.map(f => {
     let score = 0;
     const home = f.homeTeam;
     const away = f.awayTeam;
 
-    // SA team involvement
-    if (SA_TEAMS.some(t => home.includes(t) || away.includes(t)))
-      score += 50;
-
     // Competition tier
-    for (const [comp, pts] of Object.entries(COMPETITION_SCORES)) {
+    for (const [comp, pts] of Object.entries(competitionScores)) {
       if (f.competition.includes(comp)) { score += pts; break; }
     }
 
-    // Weekend timing
+    // Rugby-only: SA team involvement + derby bonus
+    if (sport === 'rugby_union') {
+      if (RUGBY_SA_TEAMS.some(t => home.includes(t) || away.includes(t)))
+        score += 50;
+      if (SA_DERBIES.some(([a, b]) =>
+        (home.includes(a) && away.includes(b)) ||
+        (home.includes(b) && away.includes(a))
+      )) score += 25;
+    }
+
+    // Weekend timing bonus (applies to all sports)
     const day = new Date(f.kickoff).getDay();
     if (day === 6 || day === 0) score += 20;
     if (day === 5) score += 10;
-
-    // SA derby bonus
-    if (SA_DERBIES.some(([a, b]) =>
-      (home.includes(a) && away.includes(b)) ||
-      (home.includes(b) && away.includes(a))
-    )) score += 25;
 
     return { fixture: f, score };
   });
