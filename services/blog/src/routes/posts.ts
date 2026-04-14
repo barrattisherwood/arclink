@@ -55,14 +55,18 @@ router.get('/', resolveTenant, async (req: Request, res: Response): Promise<void
   const page = Math.max(1, parseInt(req.query.page as string) || 1);
   const limit = Math.min(50, parseInt(req.query.limit as string) || 10);
   const skip = (page - 1) * limit;
+  const tag = req.query.tag as string | undefined;
+
+  const query: Record<string, any> = { tenant_id: tenantId, status: 'published' };
+  if (tag) query.tags = { $in: [tag] };
 
   const [posts, total] = await Promise.all([
-    Post.find({ tenant_id: tenantId, status: 'published' })
+    Post.find(query)
       .sort({ published_at: -1 })
       .skip(skip)
       .limit(limit)
       .select('-content'),
-    Post.countDocuments({ tenant_id: tenantId, status: 'published' }),
+    Post.countDocuments(query),
   ]);
 
   res.json({ posts, total, page, pages: Math.ceil(total / limit) });

@@ -66,7 +66,13 @@ export async function runWeeklyRoundup(tenant: IBlogTenant): Promise<void> {
   const word_count = generated.content.trim().split(/\s+/).length;
   const reading_time = Math.ceil(word_count / 200);
 
-  // 6. Save as draft
+  // 6. Merge competition tags derived from fixtures (deterministic — don't rely on Claude)
+  const competitionTags = [...new Set(
+    selected.map(f => f.competitionTag).filter((t): t is string => !!t)
+  )];
+  const mergedTags = [...new Set([...generated.tags, ...competitionTags])];
+
+  // 7. Save as draft
   await Post.create({
     id: randomUUID(),
     tenant_id: tenant.id,
@@ -76,7 +82,7 @@ export async function runWeeklyRoundup(tenant: IBlogTenant): Promise<void> {
     excerpt: generated.excerpt,
     seo_title: generated.seo_title,
     seo_description: generated.seo_description,
-    tags: generated.tags,
+    tags: mergedTags,
     categories: generated.categories,
     article_format: 'weekly-roundup',
     dialogue_blocks: parsed.fixtures.flatMap(f => f.blocks),
