@@ -150,6 +150,8 @@ export interface SportDbFixture {
   surface?: string;   // e.g. "clay", "grass", "hard", "indoor-hard" (tennis)
 }
 
+const sleep = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
 export async function fetchUpcomingFixtures(
   sport: string,
   daysAhead: number
@@ -160,6 +162,7 @@ export async function fetchUpcomingFixtures(
 
   for (const comp of competitions) {
     try {
+      await sleep(300);
       // Step 1: get competition metadata → seasons
       const { data: meta } = await axios.get<{ seasons?: Array<{ season: string; fixtures: string }> }>(
         `${BASE}${comp.path}`,
@@ -177,6 +180,7 @@ export async function fetchUpcomingFixtures(
       const now = new Date();
       let found = false;
       for (const season of seasons.slice(0, 3)) {
+        await sleep(200);
         const { data: rows } = await axios.get<any[]>(
           `${BASE}${season.fixtures}`,
           { headers: HEADERS() }
