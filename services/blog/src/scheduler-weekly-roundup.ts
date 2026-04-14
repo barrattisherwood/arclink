@@ -42,6 +42,7 @@ cron.schedule('0 4 * * 2', async () => {
 export async function runWeeklyRoundup(tenant: IBlogTenant): Promise<void> {
   // 1. Fetch fixtures
   const raw = await fetchUpcomingFixtures(tenant.sport_key, 7);
+  console.log(`[Weekly Roundup] Raw fixtures (${raw.length}):`, raw.map(f => `${f.competition} | ${f.homeTeam} vs ${f.awayTeam} | ${f.kickoff}`));
   if (!raw.length) {
     console.log(`[Weekly Roundup] No fixtures for ${tenant.name} — skipping`);
     return;
@@ -49,6 +50,7 @@ export async function runWeeklyRoundup(tenant: IBlogTenant): Promise<void> {
 
   // 2. Score and select
   const selected = scoreAndSelectFixtures(raw, tenant.sport_key);
+  console.log(`[Weekly Roundup] Selected (${selected.length}):`, selected.map(f => `${f.competition} | ${f.homeTeam} vs ${f.awayTeam}`));
 
   // 3. Build title
   const date = new Date().toLocaleDateString('en-ZA', {
