@@ -54,7 +54,7 @@ export async function runWeeklyRoundup(tenant: IBlogTenant): Promise<void> {
   const date = new Date().toLocaleDateString('en-ZA', {
     day: 'numeric', month: 'long', year: 'numeric'
   });
-  const title = `${tenant.sport_label} Weekend Preview — ${date}`;
+  const title = `${tenant.sport_label} Weekly Preview — ${date}`;
 
   // 4. Generate directly (skip queue for automation)
   const generated = await generatePost(tenant, title, [], undefined, selected);

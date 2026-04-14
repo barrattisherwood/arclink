@@ -81,7 +81,7 @@ export function scoreAndSelectFixtures(
       if (f.competition.includes(comp)) { score += pts; break; }
     }
 
-    // Rugby-only: SA team involvement + derby bonus
+    // Rugby-only: SA team involvement + derby bonus + weekend timing
     if (sport === 'rugby_union') {
       if (RUGBY_SA_TEAMS.some(t => home.includes(t) || away.includes(t)))
         score += 50;
@@ -89,12 +89,10 @@ export function scoreAndSelectFixtures(
         (home.includes(a) && away.includes(b)) ||
         (home.includes(b) && away.includes(a))
       )) score += 25;
+      const day = new Date(f.kickoff).getDay();
+      if (day === 6 || day === 0) score += 20;
+      if (day === 5) score += 10;
     }
-
-    // Weekend timing bonus (applies to all sports)
-    const day = new Date(f.kickoff).getDay();
-    if (day === 6 || day === 0) score += 20;
-    if (day === 5) score += 10;
 
     return { fixture: f, score };
   });

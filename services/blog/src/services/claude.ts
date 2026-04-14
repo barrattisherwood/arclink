@@ -169,7 +169,7 @@ ${P2 ? `- ${p2} responds (150–180 words): their angle. May agree or push back 
 
 After all fixture blocks, output a JSON block (fenced with \`\`\`json):
 {
-  "seo_title": "Weekend ${tenant.sport_label || 'sports'} betting preview max 60 chars",
+  "seo_title": "Weekly ${tenant.sport_label || 'sports'} betting preview max 60 chars",
   "seo_description": "Meta description max 155 chars",
   "excerpt": "Brief summary of what this roundup covers, max 200 chars",
   "categories": ["Fixture Previews"],
