@@ -38,11 +38,20 @@ const SA_DERBIES = [
 // ─── Tennis ──────────────────────────────────────────────────────────────────
 
 const TENNIS_COMPETITION_SCORES: Record<string, number> = {
+  // Grand Slams
   'Australian Open': 50, 'French Open': 50, 'Wimbledon': 50, 'US Open': 50,
   'Australian Open (W)': 50, 'Wimbledon (W)': 50, 'US Open (W)': 50,
+  // ATP Finals
+  'ATP Finals': 40,
+  // Masters 1000
   'Indian Wells': 35, 'Miami Open': 35, 'Monte Carlo': 35,
   'Madrid Open': 35, 'Rome': 35, 'Cincinnati': 35,
-  'Paris Masters': 35, 'ATP Finals': 40,
+  'Paris Masters': 35,
+  // ATP 500
+  'Barcelona': 28, 'Munich': 28, 'Hamburg': 28, 'Washington': 28,
+  'Halle': 28, "Queen's Club": 28, 'Rotterdam': 28, 'Dubai': 28,
+  'Rio de Janeiro': 28, 'Beijing': 28, 'Tokyo': 28, 'Vienna': 28, 'Basel': 28,
+  // Davis Cup
   'Davis Cup': 25,
 };
 
