@@ -185,7 +185,7 @@ async function syncFixtures(
 // ---------------------------------------------------------------------------
 // Shared sync runner — exported so it can be triggered via admin endpoint
 // ---------------------------------------------------------------------------
-export async function runAllSports(): Promise<void> {
+async function runAllSports(): Promise<void> {
   try {
     const cricketFixtures = await fetchFixtures(CRICKET_COMPETITIONS, 14);
     await syncFixtures('betwise-cricket', cricketFixtures);

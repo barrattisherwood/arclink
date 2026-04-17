@@ -5,7 +5,7 @@ import sitesRouter from './routes/sites';
 import typesRouter from './routes/types';
 import entriesRouter from './routes/entries';
 import uploadRouter from './routes/upload';
-import { startFixtureScheduler, runAllSports } from './scheduler-fixtures';
+import { startFixtureScheduler } from './scheduler-fixtures';
 
 const app = express();
 const PORT = process.env.PORT ?? 3003;
@@ -55,16 +55,6 @@ app.use('/api/upload/:siteId', uploadRouter);
 
 app.get('/health', (_, res) => res.json({ status: 'ok', service: 'content' }));
 
-app.post('/admin/sync-fixtures', async (req, res) => {
-  const secret = req.headers['x-admin-secret'];
-  if (!secret || secret !== process.env['ADMIN_SECRET']) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return;
-  }
-  console.log('[FixtureScheduler] Manual sync triggered');
-  runAllSports().catch(err => console.error('[FixtureScheduler] Manual sync error:', err));
-  res.json({ ok: true, message: 'Fixture sync started' });
-});
 
 async function start(): Promise<void> {
   const mongoUri = process.env.MONGODB_URI;
