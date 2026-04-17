@@ -10,12 +10,16 @@ const router = Router({ mergeParams: true });
 // GET /entries/:siteId/:typeSlug — list entries
 router.get('/:typeSlug', resolveTenant, async (req: Request, res: Response): Promise<void> => {
   const { siteId, typeSlug } = req.params;
-  const { published, limit = '50', offset = '0', ...filters } = req.query;
+  const { published, upcoming, limit = '50', offset = '0', ...filters } = req.query;
 
   const query: Record<string, any> = { siteId, contentTypeSlug: typeSlug };
 
   if (published !== undefined) {
     query.published = published === 'true';
+  }
+
+  if (upcoming === 'true') {
+    query['data.kickoff'] = { $gt: new Date().toISOString() };
   }
 
   // Allow filtering by any data field (select/boolean fields)

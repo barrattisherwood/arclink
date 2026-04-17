@@ -33,6 +33,41 @@ const RUGBY_COMPETITIONS = [
   { path: '/api/flashscore/rugby-union/world:8/super-rugby:Stv0V7h5',               name: 'Super Rugby' },
 ];
 
+const TENNIS_COMPETITIONS = [
+  // Grand Slams — ATP
+  { path: '/api/flashscore/tennis/atp-singles:5724/australian-open:MP4jLdJh', name: 'Australian Open' },
+  { path: '/api/flashscore/tennis/atp-singles:5724/french-open:tItR6sEf',    name: 'French Open' },
+  { path: '/api/flashscore/tennis/atp-singles:5724/wimbledon:nZi4fKds',      name: 'Wimbledon' },
+  { path: '/api/flashscore/tennis/atp-singles:5724/us-open:65k5lHxU',        name: 'US Open' },
+  // ATP Masters 1000
+  { path: '/api/flashscore/tennis/atp-singles:5724/indian-wells:EuEPYusS',   name: 'Indian Wells' },
+  { path: '/api/flashscore/tennis/atp-singles:5724/miami:lYvC7qBE',          name: 'Miami Open' },
+  { path: '/api/flashscore/tennis/atp-singles:5724/monte-carlo:IsxHSx6l',    name: 'Monte Carlo' },
+  { path: '/api/flashscore/tennis/atp-singles:5724/madrid:632P4ana',         name: 'Madrid Open' },
+  { path: '/api/flashscore/tennis/atp-singles:5724/rome:xIkUr2vO',           name: 'Rome' },
+  { path: '/api/flashscore/tennis/atp-singles:5724/cincinnati:vo6KqUyn',     name: 'Cincinnati' },
+  { path: '/api/flashscore/tennis/atp-singles:5724/paris:pOtlc1qr',          name: 'Paris Masters' },
+  { path: '/api/flashscore/tennis/atp-singles:5724/finals-turin:MeRVE9s8',   name: 'ATP Finals' },
+  // ATP 500
+  { path: '/api/flashscore/tennis/atp-singles:5724/rotterdam:r5DdTIZC',      name: 'Rotterdam' },
+  { path: '/api/flashscore/tennis/atp-singles:5724/dubai:xKbLXKij',          name: 'Dubai' },
+  { path: '/api/flashscore/tennis/atp-singles:5724/rio-de-janeiro:bZLCRom0', name: 'Rio de Janeiro' },
+  { path: '/api/flashscore/tennis/atp-singles:5724/barcelona:rZvXbpeD',      name: 'Barcelona' },
+  { path: '/api/flashscore/tennis/atp-singles:5724/munich:6ccef0Jo',         name: 'Munich' },
+  { path: '/api/flashscore/tennis/atp-singles:5724/halle:0pOdQOCg',          name: 'Halle' },
+  { path: '/api/flashscore/tennis/atp-singles:5724/london:SUpSZy5K',         name: "Queen's Club" },
+  { path: '/api/flashscore/tennis/atp-singles:5724/hamburg:I5j9PrSa',        name: 'Hamburg' },
+  { path: '/api/flashscore/tennis/atp-singles:5724/washington:rgTHIK74',     name: 'Washington' },
+  { path: '/api/flashscore/tennis/atp-singles:5724/beijing:UirAofN6',        name: 'Beijing' },
+  { path: '/api/flashscore/tennis/atp-singles:5724/tokyo:lAzP4qg4',          name: 'Tokyo' },
+  { path: '/api/flashscore/tennis/atp-singles:5724/vienna:GvgalJQT',         name: 'Vienna' },
+  { path: '/api/flashscore/tennis/atp-singles:5724/basel:t8icmqob',          name: 'Basel' },
+  // Grand Slams — WTA
+  { path: '/api/flashscore/tennis/wta-singles:5725/australian-open:0G3fKGYb', name: 'Australian Open (W)' },
+  { path: '/api/flashscore/tennis/wta-singles:5725/wimbledon:hl1W8RZs',       name: 'Wimbledon (W)' },
+  { path: '/api/flashscore/tennis/wta-singles:5725/us-open:6g0xhggi',         name: 'US Open (W)' },
+];
+
 const FOOTBALL_COMPETITIONS = [
   // SA domestic — confirmed live 6 April 2026
   { path: '/api/flashscore/football/south-africa:175/betway-premiership:WYFXQ1KH', name: 'PSL' },
@@ -148,35 +183,54 @@ async function syncFixtures(
 }
 
 // ---------------------------------------------------------------------------
-// Cron — every Tuesday 03:30 UTC (30 min before blog roundup at 04:00 UTC)
+// Shared sync runner
+// ---------------------------------------------------------------------------
+async function runAllSports(): Promise<void> {
+  try {
+    const cricketFixtures = await fetchFixtures(CRICKET_COMPETITIONS, 14);
+    await syncFixtures('betwise-cricket', cricketFixtures);
+  } catch (err) {
+    console.error('[FixtureScheduler] Cricket sync failed:', err);
+  }
+
+  try {
+    const rugbyFixtures = await fetchFixtures(RUGBY_COMPETITIONS, 14);
+    await syncFixtures('betwise-rugby', rugbyFixtures);
+  } catch (err) {
+    console.error('[FixtureScheduler] Rugby sync failed:', err);
+  }
+
+  try {
+    const footballFixtures = await fetchFixtures(FOOTBALL_COMPETITIONS, 14);
+    await syncFixtures('betwise-football', footballFixtures);
+  } catch (err) {
+    console.error('[FixtureScheduler] Football sync failed:', err);
+  }
+
+  try {
+    const tennisFixtures = await fetchFixtures(TENNIS_COMPETITIONS, 14);
+    await syncFixtures('satennis', tennisFixtures);
+  } catch (err) {
+    console.error('[FixtureScheduler] Tennis sync failed:', err);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Cron — Tuesday 03:30 UTC (before blog roundup at 04:00 UTC)
+//        Friday  03:30 UTC (mid-week refresh for weekend fixtures)
 // ---------------------------------------------------------------------------
 export function startFixtureScheduler(): void {
   cron.schedule('30 3 * * 2', async () => {
     console.log('[FixtureScheduler] Tuesday run started');
-
-    try {
-      const cricketFixtures = await fetchFixtures(CRICKET_COMPETITIONS, 14);
-      await syncFixtures('betwise-cricket', cricketFixtures);
-    } catch (err) {
-      console.error('[FixtureScheduler] Cricket sync failed:', err);
-    }
-
-    try {
-      const rugbyFixtures = await fetchFixtures(RUGBY_COMPETITIONS, 14);
-      await syncFixtures('betwise-rugby', rugbyFixtures);
-    } catch (err) {
-      console.error('[FixtureScheduler] Rugby sync failed:', err);
-    }
-
-    try {
-      const footballFixtures = await fetchFixtures(FOOTBALL_COMPETITIONS, 14);
-      await syncFixtures('betwise-football', footballFixtures);
-    } catch (err) {
-      console.error('[FixtureScheduler] Football sync failed:', err);
-    }
-
+    await runAllSports();
     console.log('[FixtureScheduler] Tuesday run complete');
   });
 
-  console.log('Fixture scheduler started — fires every Tuesday 03:30 UTC');
+  cron.schedule('30 3 * * 5', async () => {
+    console.log('[FixtureScheduler] Friday run started');
+    await runAllSports();
+    console.log('[FixtureScheduler] Friday run complete');
+  });
+
+  console.log('Fixture scheduler started — fires Tuesday + Friday 03:30 UTC');
 }
