@@ -13,10 +13,11 @@ Each fixture has these fields inside its `data` object:
 
 ```json
 {
-  "homeTeam": "Mamelodi Sundowns",
-  "awayTeam": "Orlando Pirates",
-  "kickoff":  "2026-04-19T14:00:00.000Z",
-  "competition": "PSL"
+  "homeTeam":    "Mamelodi Sundowns",
+  "awayTeam":    "Orlando Pirates",
+  "kickoff":     "2026-04-19T14:00:00.000Z",
+  "competition": "PSL",
+  "tag":         "psl"
 }
 ```
 
@@ -45,32 +46,26 @@ Returns all published fixtures with a kickoff date in the future, sorted by
 GET /api/entries/betwise-football/fixture?published=true&upcoming=true&limit=20&offset=0
 ```
 
-### Filter by competition
+### Filter by tag (recommended)
 
-Pass any `data.*` field as a query param for exact-match filtering:
+Use the `tag` field — short slugs, stable, no exact-string fragility:
 
 ```
-GET /api/entries/betwise-football/fixture?published=true&upcoming=true&competition=PSL
-GET /api/entries/betwise-football/fixture?published=true&upcoming=true&competition=Champions+League
-GET /api/entries/betwise-football/fixture?published=true&upcoming=true&competition=Premier+League
+GET /api/entries/betwise-football/fixture?published=true&upcoming=true&tag=psl
+GET /api/entries/betwise-football/fixture?published=true&upcoming=true&tag=ucl
+GET /api/entries/betwise-football/fixture?published=true&upcoming=true&tag=epl
 ```
 
-### Competition name reference
+### Tag reference
 
-Use these exact strings in the `competition` query param:
-
-| Page / Section     | `competition` value     |
-|--------------------|-------------------------|
-| PSL                | `PSL`                   |
-| EPL                | `Premier League`        |
-| UCL / Europa       | `Champions League`      |
-|                    | `Europa League`         |
-| CAF                | `CAF Champions League`  |
-| AFCON              | `AFCON`                 |
-| Nedbank Cup        | `Nedbank Cup`           |
-| Carling Knockout   | `Carling Knockout`      |
-| MTN 8              | `MTN 8`                 |
-| COSAFA             | `COSAFA Cup`            |
+| Page / Section          | `tag` value  | Competitions included                         |
+|-------------------------|--------------|-----------------------------------------------|
+| PSL / SA Football       | `psl`        | PSL, Nedbank Cup, Carling Knockout, MTN 8     |
+| EPL                     | `epl`        | Premier League                                |
+| UCL / Europa            | `ucl`        | Champions League, Europa League               |
+| CAF Champions League    | `caf`        | CAF Champions League                          |
+| AFCON                   | `afcon`      | Africa Cup of Nations                         |
+| COSAFA / Bafana Bafana  | `bafana`     | COSAFA Cup                                    |
 
 ---
 
@@ -117,9 +112,10 @@ const { entries } = await res.json();
 ### Competition-specific page (e.g. PSL page)
 
 ```typescript
-const competition = encodeURIComponent('PSL'); // or 'Champions League', etc.
+// Use tag slugs — stable, no string fragility
+const tag = 'psl'; // or 'ucl', 'epl', 'caf', 'afcon', 'bafana'
 const res = await fetch(
-  `https://content.arclink.dev/api/entries/betwise-football/fixture?published=true&upcoming=true&competition=${competition}&limit=10`
+  `https://content.arclink.dev/api/entries/betwise-football/fixture?published=true&upcoming=true&tag=${tag}&limit=10`
 );
 const { entries } = await res.json();
 ```
