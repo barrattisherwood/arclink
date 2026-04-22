@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import { randomUUID } from 'crypto';
 import slugify from 'slugify';
-import { fetchUpcomingFixtures } from './services/sportdb';
+import { fetchUpcomingFixturesFromDb } from './services/db-fixtures';
 import { scoreAndSelectFixtures } from './services/fixture-selector';
 import { generatePost } from './services/claude';
 import { BlogTenant, IBlogTenant } from './models/BlogTenant';
@@ -40,8 +40,8 @@ cron.schedule('0 4 * * 2', async () => {
 });
 
 export async function runWeeklyRoundup(tenant: IBlogTenant): Promise<void> {
-  // 1. Fetch fixtures
-  const raw = await fetchUpcomingFixtures(tenant.sport_key, 7);
+  // 1. Fetch fixtures from DB (avoids burning SportDB quota)
+  const raw = await fetchUpcomingFixturesFromDb(tenant.siteId, 7);
   console.log(`[Weekly Roundup] Raw fixtures (${raw.length}):`, raw.map(f => `${f.competition} | ${f.homeTeam} vs ${f.awayTeam} | ${f.kickoff}`));
   if (!raw.length) {
     console.log(`[Weekly Roundup] No fixtures for ${tenant.name} — skipping`);

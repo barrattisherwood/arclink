@@ -18,7 +18,7 @@ interface LiveFixture {
   kickoff: string; // ISO UTC
 }
 
-const CRICKET_COMPETITIONS = [
+export const CRICKET_COMPETITIONS = [
   { path: '/api/flashscore/cricket/world:8/one-day-international:OG7nzYAD',      name: 'ODI Series',        tag: 'odi' },
   { path: '/api/flashscore/cricket/world:8/twenty20-international:2i0B6Zul',     name: 'T20 International', tag: 't20i' },
   { path: '/api/flashscore/cricket/world:8/test-series:AkPEBy3K',                name: 'Test Series',       tag: 'test' },
@@ -27,14 +27,14 @@ const CRICKET_COMPETITIONS = [
   { path: '/api/flashscore/cricket/south-africa:175/csa-t20-challenge:AVrQexSr', name: 'CSA T20 Challenge', tag: 'csa-t20' },
 ];
 
-const RUGBY_COMPETITIONS = [
+export const RUGBY_COMPETITIONS = [
   { path: '/api/flashscore/rugby-union/world:8/united-rugby-championship:jBHqXTNh', name: 'United Rugby Championship', tag: 'urc' },
   { path: '/api/flashscore/rugby-union/south-africa:175/currie-cup:pjUEaE29',       name: 'Currie Cup',                tag: 'currie-cup' },
   { path: '/api/flashscore/rugby-union/world:8/rugby-championship:xxwSbYzH',        name: 'Rugby Championship',        tag: 'rugby-championship' },
   { path: '/api/flashscore/rugby-union/world:8/super-rugby:Stv0V7h5',               name: 'Super Rugby',               tag: 'super-rugby' },
 ];
 
-const TENNIS_COMPETITIONS = [
+export const TENNIS_COMPETITIONS = [
   // Grand Slams — ATP
   { path: '/api/flashscore/tennis/atp-singles:5724/australian-open:MP4jLdJh', name: 'Australian Open',   tag: 'australian-open' },
   { path: '/api/flashscore/tennis/atp-singles:5724/french-open:tItR6sEf',    name: 'French Open',       tag: 'french-open' },
@@ -69,7 +69,7 @@ const TENNIS_COMPETITIONS = [
   { path: '/api/flashscore/tennis/wta-singles:5725/us-open:6g0xhggi',         name: 'US Open (W)',         tag: 'us-open' },
 ];
 
-const FOOTBALL_COMPETITIONS = [
+export const FOOTBALL_COMPETITIONS = [
   // SA domestic — confirmed live 6 April 2026
   { path: '/api/flashscore/football/south-africa:175/betway-premiership:WYFXQ1KH', name: 'PSL',                 tag: 'psl' },
   { path: '/api/flashscore/football/south-africa:175/nedbank-cup:WMffLgMb',        name: 'Nedbank Cup',         tag: 'psl' },
@@ -186,54 +186,76 @@ async function syncFixtures(
 }
 
 // ---------------------------------------------------------------------------
-// Shared sync runner — exported so it can be triggered via admin endpoint
+// Per-sport runners — isolated so each gets its own daily API quota
 // ---------------------------------------------------------------------------
-async function runAllSports(): Promise<void> {
-  try {
-    const cricketFixtures = await fetchFixtures(CRICKET_COMPETITIONS, 14);
-    await syncFixtures('betwise-cricket', cricketFixtures);
-  } catch (err) {
-    console.error('[FixtureScheduler] Cricket sync failed:', err);
-  }
+async function runTennis(): Promise<void> {
+  const fixtures = await fetchFixtures(TENNIS_COMPETITIONS, 14);
+  await syncFixtures('satennis', fixtures);
+}
 
-  try {
-    const rugbyFixtures = await fetchFixtures(RUGBY_COMPETITIONS, 14);
-    await syncFixtures('betwise-rugby', rugbyFixtures);
-  } catch (err) {
-    console.error('[FixtureScheduler] Rugby sync failed:', err);
-  }
+async function runCricket(): Promise<void> {
+  const fixtures = await fetchFixtures(CRICKET_COMPETITIONS, 14);
+  await syncFixtures('betwise-cricket', fixtures);
+}
 
-  try {
-    const footballFixtures = await fetchFixtures(FOOTBALL_COMPETITIONS, 14);
-    await syncFixtures('betwise-football', footballFixtures);
-  } catch (err) {
-    console.error('[FixtureScheduler] Football sync failed:', err);
-  }
+async function runRugby(): Promise<void> {
+  const fixtures = await fetchFixtures(RUGBY_COMPETITIONS, 14);
+  await syncFixtures('betwise-rugby', fixtures);
+}
 
-  try {
-    const tennisFixtures = await fetchFixtures(TENNIS_COMPETITIONS, 14);
-    await syncFixtures('satennis', tennisFixtures);
-  } catch (err) {
-    console.error('[FixtureScheduler] Tennis sync failed:', err);
-  }
+async function runFootball(): Promise<void> {
+  const fixtures = await fetchFixtures(FOOTBALL_COMPETITIONS, 14);
+  await syncFixtures('betwise-football', fixtures);
 }
 
 // ---------------------------------------------------------------------------
-// Cron — Tuesday 03:30 UTC (before blog roundup at 04:00 UTC)
-//        Friday  03:30 UTC (mid-week refresh for weekend fixtures)
+// Cron schedule — each sport on its own day to avoid sharing API quota:
+//
+//   Tennis  — Mon + Thu 02:00 UTC  (1 day ahead of Tuesday roundup)
+//   Cricket — Mon + Thu 02:30 UTC  (1 day ahead of Tuesday roundup)
+//   Rugby   — Tue + Fri 03:00 UTC  (fresh for Tuesday roundup at 04:00)
+//   Football— Tue + Fri 03:30 UTC  (fresh for Tuesday roundup at 04:00)
 // ---------------------------------------------------------------------------
 export function startFixtureScheduler(): void {
+  // Tennis — Monday + Thursday 02:00 UTC
+  cron.schedule('0 2 * * 1', async () => {
+    console.log('[FixtureScheduler] Tennis Monday run');
+    try { await runTennis(); } catch (err) { console.error('[FixtureScheduler] Tennis failed:', err); }
+  });
+  cron.schedule('0 2 * * 4', async () => {
+    console.log('[FixtureScheduler] Tennis Thursday run');
+    try { await runTennis(); } catch (err) { console.error('[FixtureScheduler] Tennis failed:', err); }
+  });
+
+  // Cricket — Monday + Thursday 02:30 UTC
+  cron.schedule('30 2 * * 1', async () => {
+    console.log('[FixtureScheduler] Cricket Monday run');
+    try { await runCricket(); } catch (err) { console.error('[FixtureScheduler] Cricket failed:', err); }
+  });
+  cron.schedule('30 2 * * 4', async () => {
+    console.log('[FixtureScheduler] Cricket Thursday run');
+    try { await runCricket(); } catch (err) { console.error('[FixtureScheduler] Cricket failed:', err); }
+  });
+
+  // Rugby — Tuesday + Friday 03:00 UTC
+  cron.schedule('0 3 * * 2', async () => {
+    console.log('[FixtureScheduler] Rugby Tuesday run');
+    try { await runRugby(); } catch (err) { console.error('[FixtureScheduler] Rugby failed:', err); }
+  });
+  cron.schedule('0 3 * * 5', async () => {
+    console.log('[FixtureScheduler] Rugby Friday run');
+    try { await runRugby(); } catch (err) { console.error('[FixtureScheduler] Rugby failed:', err); }
+  });
+
+  // Football — Tuesday + Friday 03:30 UTC
   cron.schedule('30 3 * * 2', async () => {
-    console.log('[FixtureScheduler] Tuesday run started');
-    await runAllSports();
-    console.log('[FixtureScheduler] Tuesday run complete');
+    console.log('[FixtureScheduler] Football Tuesday run');
+    try { await runFootball(); } catch (err) { console.error('[FixtureScheduler] Football failed:', err); }
   });
-
   cron.schedule('30 3 * * 5', async () => {
-    console.log('[FixtureScheduler] Friday run started');
-    await runAllSports();
-    console.log('[FixtureScheduler] Friday run complete');
+    console.log('[FixtureScheduler] Football Friday run');
+    try { await runFootball(); } catch (err) { console.error('[FixtureScheduler] Football failed:', err); }
   });
 
-  console.log('Fixture scheduler started — fires Tuesday + Friday 03:30 UTC');
+  console.log('Fixture scheduler started — Tennis/Cricket Mon+Thu, Rugby/Football Tue+Fri');
 }

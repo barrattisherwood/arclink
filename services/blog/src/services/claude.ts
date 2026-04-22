@@ -165,7 +165,7 @@ ${P2 ? `- ${p2} responds (150–180 words): their angle. May agree or push back 
 - ${p2} must reference ${p1}'s point by name in their response.` : ''}
 - Each speaker ends their block with one "Bet at [Bookmaker]" CTA — a specific SA bookmaker.
 - Use different bookmakers across the roundup where possible.
-- Valid bookmakers: Hollywoodbets, Betway, 10bet, Supabets, Sportingbet, Playa, WSB.
+- Valid bookmakers: Hollywoodbets, Betway, 10bet.
 
 After all fixture blocks, output a JSON block (fenced with \`\`\`json):
 {
