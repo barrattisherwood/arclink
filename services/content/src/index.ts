@@ -5,6 +5,7 @@ import sitesRouter from './routes/sites';
 import typesRouter from './routes/types';
 import entriesRouter from './routes/entries';
 import uploadRouter from './routes/upload';
+import cronLogsRouter from './routes/cron-logs';
 import { startFixtureScheduler } from './scheduler-fixtures';
 
 const app = express();
@@ -52,6 +53,8 @@ app.use('/entries/:siteId', entriesRouter);
 app.use('/api/entries/:siteId', entriesRouter);
 app.use('/upload/:siteId', uploadRouter);
 app.use('/api/upload/:siteId', uploadRouter);
+app.use('/cron-logs', cronLogsRouter);
+app.use('/api/cron-logs', cronLogsRouter);
 
 app.get('/health', (_, res) => res.json({ status: 'ok', service: 'content' }));
 

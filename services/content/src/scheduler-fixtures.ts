@@ -3,6 +3,7 @@ import axios from 'axios';
 import slugify from 'slugify';
 import { ContentType } from './models/ContentType';
 import { ContentEntry } from './models/ContentEntry';
+import { CronLog } from './models/CronLog';
 
 // ---------------------------------------------------------------------------
 // SportDB config — mirrors services/blog/src/services/sportdb.ts
@@ -85,11 +86,17 @@ export const FOOTBALL_COMPETITIONS = [
   { path: '/api/flashscore/football/europe:6/europa-league:ClDjv3V5',              name: 'Europa League',       tag: 'ucl' },
 ];
 
+interface FetchResult {
+  fixtures: LiveFixture[];
+  syncErrors: Array<{ competition: string; message: string }>;
+}
+
 async function fetchFixtures(
   competitions: Array<{ path: string; name: string; tag: string }>,
   daysAhead: number,
-): Promise<LiveFixture[]> {
+): Promise<FetchResult> {
   const fixtures: LiveFixture[] = [];
+  const syncErrors: Array<{ competition: string; message: string }> = [];
   const now = new Date();
   const cutoff = new Date(Date.now() + daysAhead * 86_400_000);
 
@@ -131,34 +138,31 @@ async function fetchFixtures(
         );
         if (allPast && rows?.length) break;
       }
-    } catch (err) {
-      console.error(`[FixtureScheduler] Failed for ${comp.name}:`, err);
+    } catch (err: any) {
+      const message = err?.response?.status
+        ? `HTTP ${err.response.status}`
+        : (err?.message ?? 'Unknown error');
+      console.error(`[FixtureScheduler] Failed for ${comp.name}: ${message}`);
+      syncErrors.push({ competition: comp.name, message });
     }
   }
 
-  return fixtures;
+  return { fixtures, syncErrors };
 }
 
 // ---------------------------------------------------------------------------
 // Upsert fixtures into the content service for a given siteId
 // ---------------------------------------------------------------------------
-async function syncFixtures(
-  siteId: string,
-  fixtures: LiveFixture[],
-): Promise<void> {
+async function syncFixtures(siteId: string, fixtures: LiveFixture[]): Promise<number> {
   const contentType = await ContentType.findOne({ siteId, slug: 'fixture' });
   if (!contentType) {
     console.warn(`[FixtureScheduler] No "fixture" content type for site ${siteId} — skipping`);
-    return;
+    return 0;
   }
 
   for (const f of fixtures) {
-    const kickoffDate = new Date(f.kickoff);
-    const dateTag = kickoffDate.toISOString().slice(0, 10).replace(/-/g, '');
-    const slugBase = slugify(`${f.homeTeam}-vs-${f.awayTeam}-${dateTag}`, {
-      lower: true,
-      strict: true,
-    });
+    const dateTag = new Date(f.kickoff).toISOString().slice(0, 10).replace(/-/g, '');
+    const slugBase = slugify(`${f.homeTeam}-vs-${f.awayTeam}-${dateTag}`, { lower: true, strict: true });
 
     await ContentEntry.findOneAndUpdate(
       { siteId, contentTypeSlug: 'fixture', slug: slugBase },
@@ -169,13 +173,7 @@ async function syncFixtures(
           contentTypeSlug: 'fixture',
           slug: slugBase,
           published: true,
-          data: {
-            homeTeam: f.homeTeam,
-            awayTeam: f.awayTeam,
-            kickoff: f.kickoff,
-            competition: f.competition,
-            tag: f.tag,
-          },
+          data: { homeTeam: f.homeTeam, awayTeam: f.awayTeam, kickoff: f.kickoff, competition: f.competition, tag: f.tag },
         },
       },
       { upsert: true, new: true },
@@ -183,30 +181,40 @@ async function syncFixtures(
   }
 
   console.log(`[FixtureScheduler] Synced ${fixtures.length} fixture(s) → ${siteId}`);
+  return fixtures.length;
 }
 
 // ---------------------------------------------------------------------------
-// Per-sport runners — isolated so each gets its own daily API quota
+// Per-sport runners — isolated so each gets its own daily API quota.
+// Each run is persisted as a CronLog document for debugging.
 // ---------------------------------------------------------------------------
-async function runTennis(): Promise<void> {
-  const fixtures = await fetchFixtures(TENNIS_COMPETITIONS, 14);
-  await syncFixtures('satennis', fixtures);
+async function runSport(
+  job: string,
+  competitions: Array<{ path: string; name: string; tag: string }>,
+  siteId: string,
+): Promise<void> {
+  const log = await CronLog.create({ job, startedAt: new Date(), status: 'running' });
+
+  try {
+    const { fixtures, syncErrors } = await fetchFixtures(competitions, 14);
+    const synced = await syncFixtures(siteId, fixtures);
+    const status = syncErrors.length === 0 ? 'success' : synced > 0 ? 'partial' : 'failed';
+    await CronLog.findByIdAndUpdate(log._id, { finishedAt: new Date(), status, fixturesSynced: synced, syncErrors });
+    console.log(`[CronLog] ${job} → ${status} (${synced} synced, ${syncErrors.length} syncErrors)`);
+  } catch (err: any) {
+    await CronLog.findByIdAndUpdate(log._id, {
+      finishedAt: new Date(),
+      status: 'failed',
+      syncErrors: [{ competition: 'unknown', message: err?.message ?? 'Unexpected error' }],
+    });
+    console.error(`[CronLog] ${job} → failed:`, err);
+  }
 }
 
-async function runCricket(): Promise<void> {
-  const fixtures = await fetchFixtures(CRICKET_COMPETITIONS, 14);
-  await syncFixtures('betwise-cricket', fixtures);
-}
-
-async function runRugby(): Promise<void> {
-  const fixtures = await fetchFixtures(RUGBY_COMPETITIONS, 14);
-  await syncFixtures('betwise-rugby', fixtures);
-}
-
-async function runFootball(): Promise<void> {
-  const fixtures = await fetchFixtures(FOOTBALL_COMPETITIONS, 14);
-  await syncFixtures('betwise-football', fixtures);
-}
+async function runTennis():  Promise<void> { await runSport('fixture-sync-tennis',   TENNIS_COMPETITIONS,   'satennis'); }
+async function runCricket(): Promise<void> { await runSport('fixture-sync-cricket',  CRICKET_COMPETITIONS,  'betwise-cricket'); }
+async function runRugby():   Promise<void> { await runSport('fixture-sync-rugby',    RUGBY_COMPETITIONS,    'betwise-rugby'); }
+async function runFootball():Promise<void> { await runSport('fixture-sync-football', FOOTBALL_COMPETITIONS, 'betwise-football'); }
 
 // ---------------------------------------------------------------------------
 // Cron schedule — each sport on its own day to avoid sharing API quota:
