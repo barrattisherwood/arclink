@@ -188,7 +188,7 @@ async function syncFixtures(siteId: string, fixtures: LiveFixture[]): Promise<nu
 // Per-sport runners — isolated so each gets its own daily API quota.
 // Each run is persisted as a CronLog document for debugging.
 // ---------------------------------------------------------------------------
-async function runSport(
+export async function runSport(
   job: string,
   competitions: Array<{ path: string; name: string; tag: string }>,
   siteId: string,
