@@ -82,10 +82,14 @@ import { Post } from '../../../models/blog.model';
             <p class="text-sm font-medium text-white truncate pr-4">{{ editPost()!.title }}</p>
             <button (click)="closeEdit()" class="text-[#555] hover:text-white text-lg leading-none cursor-pointer">✕</button>
           </div>
-          <textarea
-            [(ngModel)]="editContent"
-            class="flex-1 bg-transparent text-xs text-[#ccc] font-mono p-5 resize-none outline-none overflow-y-auto min-h-[400px]">
-          </textarea>
+          @if (loadingEdit()) {
+            <p class="p-5 text-xs text-[#555]">Loading…</p>
+          } @else {
+            <textarea
+              [(ngModel)]="editContent"
+              class="flex-1 bg-transparent text-xs text-[#ccc] font-mono p-5 resize-none outline-none overflow-y-auto min-h-[400px] w-full">
+            </textarea>
+          }
           <div class="flex justify-end gap-3 px-5 py-4 border-t border-[#1a1a1a]">
             <button (click)="closeEdit()" class="text-xs text-[#555] hover:text-white cursor-pointer">Cancel</button>
             <button (click)="saveEdit()"
@@ -111,6 +115,7 @@ export class PublishedComponent implements OnInit {
   editPost = signal<Post | null>(null);
   editContent = '';
   saving = signal(false);
+  loadingEdit = signal(false);
 
   ngOnInit() { this.load(); }
 
@@ -142,7 +147,12 @@ export class PublishedComponent implements OnInit {
 
   openEdit(post: Post) {
     this.editPost.set(post);
-    this.editContent = post.content ?? '';
+    this.editContent = '';
+    this.loadingEdit.set(true);
+    this.api.getPost(post.id).subscribe({
+      next: ({ post: full }) => { this.editContent = full.content ?? ''; this.loadingEdit.set(false); },
+      error: () => { this.loadingEdit.set(false); this.toast.error('Failed to load post'); }
+    });
   }
 
   closeEdit() {
