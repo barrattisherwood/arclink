@@ -1,5 +1,6 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
 import { DatePipe } from '@angular/common';
+import { FormsModule } from '@angular/forms';
 import { BlogApiService } from '../../../core/services/blog-api.service';
 import { ToastService } from '../../../shared/services/toast.service';
 import { Post } from '../../../models/blog.model';
@@ -7,7 +8,7 @@ import { Post } from '../../../models/blog.model';
 @Component({
   selector: 'app-published',
   standalone: true,
-  imports: [DatePipe],
+  imports: [DatePipe, FormsModule],
   template: `
     <div class="flex items-center justify-between mb-4">
       <h2 class="text-lg font-semibold text-white">Published</h2>
@@ -58,6 +59,12 @@ import { Post } from '../../../models/blog.model';
             <span class="text-[10px] text-[#555] shrink-0">#{{ tag }}</span>
           }
 
+          <!-- Edit -->
+          <button (click)="openEdit(post)"
+                  class="text-xs text-[#555] hover:text-blue-400 cursor-pointer transition-colors shrink-0">
+            Edit
+          </button>
+
           <!-- Delete -->
           <button (click)="remove(post.id)"
                   [disabled]="deleting() === post.id"
@@ -67,6 +74,29 @@ import { Post } from '../../../models/blog.model';
         </div>
       }
     </div>
+
+    @if (editPost()) {
+      <div class="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-6" (click)="closeEdit()">
+        <div class="bg-[#111] border border-[#222] rounded-xl w-full max-w-3xl max-h-[90vh] flex flex-col" (click)="$event.stopPropagation()">
+          <div class="flex items-center justify-between px-5 py-4 border-b border-[#1a1a1a]">
+            <p class="text-sm font-medium text-white truncate pr-4">{{ editPost()!.title }}</p>
+            <button (click)="closeEdit()" class="text-[#555] hover:text-white text-lg leading-none cursor-pointer">✕</button>
+          </div>
+          <textarea
+            [(ngModel)]="editContent"
+            class="flex-1 bg-transparent text-xs text-[#ccc] font-mono p-5 resize-none outline-none overflow-y-auto min-h-[400px]">
+          </textarea>
+          <div class="flex justify-end gap-3 px-5 py-4 border-t border-[#1a1a1a]">
+            <button (click)="closeEdit()" class="text-xs text-[#555] hover:text-white cursor-pointer">Cancel</button>
+            <button (click)="saveEdit()"
+                    [disabled]="saving()"
+                    class="text-xs bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white px-4 py-1.5 rounded cursor-pointer transition-colors">
+              {{ saving() ? 'Saving…' : 'Save' }}
+            </button>
+          </div>
+        </div>
+      </div>
+    }
   `
 })
 export class PublishedComponent implements OnInit {
@@ -78,6 +108,9 @@ export class PublishedComponent implements OnInit {
   pages = signal(0);
   loading = signal(false);
   deleting = signal('');
+  editPost = signal<Post | null>(null);
+  editContent = '';
+  saving = signal(false);
 
   ngOnInit() { this.load(); }
 
@@ -104,6 +137,31 @@ export class PublishedComponent implements OnInit {
         this.toast.success('Post deleted');
       },
       error: () => { this.deleting.set(''); this.toast.error('Failed to delete'); }
+    });
+  }
+
+  openEdit(post: Post) {
+    this.editPost.set(post);
+    this.editContent = post.content;
+  }
+
+  closeEdit() {
+    this.editPost.set(null);
+    this.editContent = '';
+  }
+
+  saveEdit() {
+    const post = this.editPost();
+    if (!post) return;
+    this.saving.set(true);
+    this.api.updatePost(post.id, { content: this.editContent }).subscribe({
+      next: ({ post: updated }) => {
+        this.posts.update(ps => ps.map(p => p.id === updated.id ? updated : p));
+        this.saving.set(false);
+        this.closeEdit();
+        this.toast.success('Post saved');
+      },
+      error: () => { this.saving.set(false); this.toast.error('Failed to save'); }
     });
   }
 
