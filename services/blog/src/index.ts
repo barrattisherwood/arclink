@@ -14,6 +14,7 @@ import { startScheduler } from './scheduler';
 import './scheduler-weekly-roundup';
 import './scheduler-generation';
 import './scheduler-suggestions';
+import './scheduler-draft-publisher';
 
 const app = express();
 const PORT = process.env.PORT ?? 3002;
