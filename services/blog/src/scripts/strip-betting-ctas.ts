@@ -2,16 +2,12 @@ import 'dotenv/config';
 import mongoose from 'mongoose';
 import { Post } from '../models/Post';
 
-// Matches a full sentence containing a direct "Bet at [Bookmaker]" instruction.
-// Handles mid-paragraph and end-of-paragraph placement.
-const CTA_RE = /[^.!?\n]*Bet at (?:Hollywoodbets|Betway|10bet)[^.!?\n]*[.!?]?/gi;
-
-function strip(text: string): string {
-  return text
-    .replace(CTA_RE, '')
-    .replace(/[ \t]{2,}/g, ' ')
-    .replace(/\n{3,}/g, '\n\n')
-    .trim();
+function stripLastSentence(text: string): string {
+  const trimmed = text.trimEnd();
+  // Remove trailing punctuation, then find everything up to the previous sentence boundary
+  const withoutLast = trimmed.replace(/[.!?]\s*$/, '');
+  const match = withoutLast.match(/^[\s\S]*[.!?]/);
+  return match ? match[0].trim() : trimmed;
 }
 
 async function run(): Promise<void> {
@@ -19,38 +15,32 @@ async function run(): Promise<void> {
   if (!uri) { console.error('MONGODB_URI not set'); process.exit(1); }
 
   await mongoose.connect(uri);
-  console.log('Connected.');
+  console.log('Connected.\n');
 
   const posts = await Post.find({
     generated: true,
-    content: { $regex: 'Bet at (?:Hollywoodbets|Betway|10bet)', $options: 'i' },
+    article_format: { $in: ['dialogue', 'weekly-roundup'] },
   });
 
-  console.log(`Found ${posts.length} post(s) with CTA language.\n`);
+  console.log(`Processing ${posts.length} post(s)...\n`);
 
-  let updated = 0;
   for (const post of posts) {
-    post.content = strip(post.content);
-
     for (let i = 0; i < post.dialogue_blocks.length; i++) {
-      post.dialogue_blocks[i].content = strip(post.dialogue_blocks[i].content);
+      post.dialogue_blocks[i].content = stripLastSentence(post.dialogue_blocks[i].content);
     }
-
     for (let i = 0; i < post.fixture_dialogues.length; i++) {
       for (let j = 0; j < post.fixture_dialogues[i].blocks.length; j++) {
-        post.fixture_dialogues[i].blocks[j].content = strip(post.fixture_dialogues[i].blocks[j].content);
+        post.fixture_dialogues[i].blocks[j].content = stripLastSentence(post.fixture_dialogues[i].blocks[j].content);
       }
     }
 
     post.markModified('dialogue_blocks');
     post.markModified('fixture_dialogues');
     await post.save();
-
     console.log(`  [${post.status}] ${post.title}`);
-    updated++;
   }
 
-  console.log(`\nDone — stripped CTAs from ${updated} post(s).`);
+  console.log('\nDone.');
   await mongoose.disconnect();
 }
 
