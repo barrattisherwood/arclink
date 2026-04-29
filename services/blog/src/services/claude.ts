@@ -83,7 +83,7 @@ ${p2 ? `2. [${p2}] responds with their angle, references ${personaTag}'s point (
 Rules:
 - Each block stays fully in that persona's voice (defined in your system prompt)
 ${p2 ? `- ${otherPersona} may agree or push back — genuine dialogue, not just two monologues` : ''}
-- Each block must include a "Bet at [Bookmaker]" CTA referencing a specific SA bookmaker
+- Each block must end with a market observation referencing a specific SA bookmaker — frame it as analytical opinion, not a direct instruction (e.g. "The match winner market at Hollywoodbets looks underpriced here" not "Bet on X at Hollywoodbets")
 - Never break the delimiter format — the frontend parser depends on it
 - Do not add any text outside the delimiters (no intro paragraph, no conclusion)
 
@@ -163,7 +163,7 @@ Rules per fixture:
 - ${p1 ?? 'Analyst 1'} opens (150–180 words): their primary analytical lens. Authoritative.
 ${P2 ? `- ${p2} responds (150–180 words): their angle. May agree or push back — genuine dialogue.
 - ${p2} must reference ${p1}'s point by name in their response.` : ''}
-- Each speaker ends their block with one "Bet at [Bookmaker]" CTA — a specific SA bookmaker.
+- Each speaker ends their block with a market observation referencing a specific SA bookmaker — frame it as analytical opinion, not a direct instruction (e.g. "The games handicap at Hollywoodbets looks overpriced to me" not "Bet on X at Hollywoodbets").
 - Use different bookmakers across the roundup where possible.
 - Valid bookmakers: Hollywoodbets, Betway, 10bet.
 
