@@ -142,7 +142,7 @@ export class PublishedComponent implements OnInit {
 
   openEdit(post: Post) {
     this.editPost.set(post);
-    this.editContent = post.content;
+    this.editContent = post.content ?? '';
   }
 
   closeEdit() {
