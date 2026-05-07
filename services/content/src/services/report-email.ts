@@ -2,8 +2,6 @@ import { Resend } from 'resend';
 import { CronLog } from '../models/CronLog';
 import { ContentEntry } from '../models/ContentEntry';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 const FROM    = 'system@arclink.dev';
 const TO      = process.env.REPORT_TO_EMAIL ?? 'barratt@machinum.io';
 const WINDOW  = 2 * 60 * 60 * 1000; // 2 hours — covers the day's batch
@@ -195,6 +193,7 @@ export async function sendFixtureSyncReport(): Promise<void> {
   }
 
   try {
+    const resend = new Resend(process.env.RESEND_API_KEY);
     const reports = await fetchRecentLogs();
     const runDate = new Date().toISOString().slice(0, 16).replace('T', ' ');
     const anyFailed = reports.some(r => r.status === 'failed');
