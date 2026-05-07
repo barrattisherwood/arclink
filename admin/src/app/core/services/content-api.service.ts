@@ -3,11 +3,18 @@ import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
 import { ContentType } from '../../models/content-type.model';
 import { ContentEntry } from '../../models/content-entry.model';
+import { AuthService } from './auth.service';
 
 @Injectable({ providedIn: 'root' })
 export class ContentApiService {
   private http = inject(HttpClient);
+  private auth = inject(AuthService);
   private base = environment.contentApiUrl;
+
+  private get headers(): HttpHeaders {
+    const token = this.auth.getToken();
+    return token ? new HttpHeaders({ Authorization: `Bearer ${token}` }) : new HttpHeaders();
+  }
 
   // Sites (super-admin)
   getSites() {
@@ -70,6 +77,16 @@ export class ContentApiService {
     files.forEach(f => form.append('files', f));
     return this.http.post<{ images: { url: string; publicId: string; width: number; height: number }[] }>(
       `${this.base}/upload/${siteId}/batch`, form
+    );
+  }
+
+  // Fixture sync — triggers the SportDB fixture sync inside the content service
+  syncFixtures(siteId?: string) {
+    const url = siteId
+      ? `${this.base}/api/cron-logs/sync-fixtures?siteId=${encodeURIComponent(siteId)}`
+      : `${this.base}/api/cron-logs/sync-fixtures`;
+    return this.http.post<{ ok: boolean; results: Array<{ siteId: string; status: string }> }>(
+      url, {}, { headers: this.headers }
     );
   }
 }

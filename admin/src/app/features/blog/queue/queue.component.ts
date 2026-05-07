@@ -2,6 +2,7 @@ import { Component, inject, signal, OnInit } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { BlogApiService } from '../../../core/services/blog-api.service';
+import { ContentApiService } from '../../../core/services/content-api.service';
 import { ToastService } from '../../../shared/services/toast.service';
 import { TitleSuggestion, QueueItem, Post } from '../../../models/blog.model';
 
@@ -12,8 +13,29 @@ import { TitleSuggestion, QueueItem, Post } from '../../../models/blog.model';
   template: `
     <h2 class="text-lg font-semibold text-white mb-4">Queue</h2>
 
-    <!-- Generate Weekly Roundup -->
+    <!-- Fixture Sync + Weekly Roundup -->
     @if (api.roundupEnabled) {
+    <div class="bg-[#111] rounded-lg border border-[#1a1a1a] p-4 mb-3 flex items-center justify-between">
+      <div class="flex-1 min-w-0 mr-4">
+        <p class="text-sm font-medium text-white">Fixture Sync</p>
+        <p class="text-xs text-[#555] mt-0.5">Pull latest fixtures from SportDB into the content service DB</p>
+        @if (syncResult()) {
+          <p class="text-xs text-green-400 mt-1">{{ syncResult() }}</p>
+        }
+        @if (syncError()) {
+          <p class="text-xs text-red-400 mt-1">{{ syncError() }}</p>
+        }
+      </div>
+      <button (click)="syncFixtures()"
+              [disabled]="syncing()"
+              class="px-4 py-2 text-sm rounded-md bg-sky-700 hover:bg-sky-600 text-white disabled:opacity-50 cursor-pointer transition-colors shrink-0 whitespace-nowrap">
+        @if (syncing()) {
+          <span class="inline-block w-3 h-3 border border-[#fff5] border-t-white rounded-full animate-spin mr-1"></span>Syncing...
+        } @else {
+          ↻ Sync fixtures
+        }
+      </button>
+    </div>
     <div class="bg-[#111] rounded-lg border border-[#1a1a1a] p-4 mb-6 flex items-center justify-between">
       <div class="flex-1 min-w-0 mr-4">
         <p class="text-sm font-medium text-white">Weekly Roundup</p>
@@ -140,6 +162,7 @@ import { TitleSuggestion, QueueItem, Post } from '../../../models/blog.model';
 })
 export class QueueComponent implements OnInit {
   api = inject(BlogApiService);
+  private contentApi = inject(ContentApiService);
   private toast = inject(ToastService);
 
   suggestions = signal<TitleSuggestion[]>([]);
@@ -151,6 +174,9 @@ export class QueueComponent implements OnInit {
   suggesting = signal(false);
   generating = signal(false);
   prioritising = signal(false);
+  syncing = signal(false);
+  syncResult = signal<string | null>(null);
+  syncError = signal<string | null>(null);
   generatingRoundup = signal(false);
   roundupResult = signal<Post | null>(null);
   roundupError = signal<string | null>(null);
@@ -210,6 +236,23 @@ export class QueueComponent implements OnInit {
       error: (err) => {
         this.generatingRoundup.set(false);
         this.roundupError.set(err.error?.error ?? 'Generation failed — check Railway logs');
+      }
+    });
+  }
+
+  syncFixtures() {
+    this.syncing.set(true);
+    this.syncResult.set(null);
+    this.syncError.set(null);
+    this.contentApi.syncFixtures().subscribe({
+      next: (res) => {
+        this.syncing.set(false);
+        const ok = res.results.filter(r => r.status === 'ok').length;
+        this.syncResult.set(`Sync complete — ${ok}/${res.results.length} sports succeeded`);
+      },
+      error: (err) => {
+        this.syncing.set(false);
+        this.syncError.set(err.error?.error ?? 'Sync failed — check Railway logs');
       }
     });
   }

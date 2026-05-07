@@ -1,0 +1,1330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dialogue Format — Complete Build Spec</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Syne:wght@500;700&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0c0c0e;--s1:#131316;--s2:#1a1a1f;--border:#252529;
+  --text:#e2e0ea;--muted:#6b6980;--accent:#a78bfa;--green:#4ade80;
+  --amber:#fbbf24;--red:#f87171;--blue:#60a5fa;--teal:#2dd4bf;
+  --orange:#fb923c;
+  --mono:'JetBrains Mono',monospace;--sans:'Inter',sans-serif;--display:'Syne',sans-serif;
+}
+html{font-size:15px;scroll-behavior:smooth}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);font-weight:300;line-height:1.7}
+
+.header{padding:2.5rem 3rem 2rem;border-bottom:1px solid var(--border)}
+.header-eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.18em;color:var(--accent);text-transform:uppercase;margin-bottom:.4rem}
+.header-title{font-family:var(--display);font-size:2.2rem;font-weight:700;line-height:1.1;margin-bottom:.5rem}
+.header-subtitle{font-size:.9375rem;color:var(--muted);max-width:640px;margin-bottom:1rem}
+.header-tags{display:flex;flex-wrap:wrap;gap:.5rem}
+.tag{font-family:var(--mono);font-size:10px;padding:.2em .6em;border-radius:3px;background:var(--s2);border:1px solid var(--border);color:var(--muted)}
+.tag-api{border-color:var(--blue);color:var(--blue)}
+.tag-admin{border-color:var(--amber);color:var(--amber)}
+.tag-fe{border-color:var(--green);color:var(--green)}
+.tag-auto{border-color:var(--orange);color:var(--orange)}
+
+.layout{display:grid;grid-template-columns:240px 1fr;gap:0;min-height:calc(100vh - 140px)}
+
+.sidebar{padding:1.5rem;border-right:1px solid var(--border);position:sticky;top:0;height:100vh;overflow-y:auto}
+.sidebar-section{font-family:var(--mono);font-size:9px;letter-spacing:.18em;color:var(--accent);text-transform:uppercase;margin:.9rem 0 .3rem;padding-left:.5rem}
+.sidebar-section:first-child{margin-top:0}
+.sidebar a{display:block;font-family:var(--mono);font-size:11px;color:var(--muted);text-decoration:none;padding:.3rem .5rem;border-radius:3px;border-left:2px solid transparent;transition:all .12s;line-height:1.4}
+.sidebar a:hover{color:var(--text);background:var(--s2)}
+.sidebar a .sn{color:var(--border);margin-right:.3rem}
+
+main{padding:2.5rem 3rem;max-width:820px}
+
+.phase{margin-bottom:4rem}
+.phase-header{display:flex;align-items:baseline;gap:.75rem;margin-bottom:1.75rem;padding-bottom:.75rem;border-bottom:1px solid var(--border);flex-wrap:wrap}
+.phase-num{font-family:var(--mono);font-size:11px;color:var(--muted);letter-spacing:.1em;white-space:nowrap}
+.phase-title{font-family:var(--display);font-size:1.3rem;font-weight:500}
+.phase-badges{display:flex;gap:.4rem;margin-left:auto;flex-wrap:wrap}
+
+.step{margin-bottom:2rem;padding:1.25rem;background:var(--s1);border:1px solid var(--border);border-radius:4px}
+.step-head{display:flex;align-items:center;gap:.75rem;margin-bottom:.75rem;flex-wrap:wrap}
+.step-num{font-family:var(--mono);font-size:10px;color:var(--muted);letter-spacing:.08em;white-space:nowrap}
+.step-title{font-weight:500;font-size:.9375rem;flex:1}
+.badge{font-family:var(--mono);font-size:10px;padding:.15em .5em;border-radius:3px;white-space:nowrap}
+.b-api{background:#0c1522;color:var(--blue);border:1px solid #1a3a5a}
+.b-admin{background:#1a1200;color:var(--amber);border:1px solid #44320a}
+.b-fe{background:#0a1a0a;color:var(--green);border:1px solid #1a401a}
+.b-auto{background:#1a0e00;color:var(--orange);border:1px solid #44280a}
+.b-new{background:#1a0a2e;color:var(--accent);border:1px solid #3a1a6e}
+
+pre{background:var(--bg);border:1px solid var(--border);border-radius:3px;padding:1.1rem 1.3rem;overflow-x:auto;font-family:var(--mono);font-size:12px;line-height:1.85;margin:.6rem 0;position:relative}
+pre .fn{position:absolute;top:.5rem;right:.75rem;font-size:10px;color:var(--muted);letter-spacing:.05em}
+code{font-family:var(--mono);font-size:12px;background:var(--s2);padding:.1em .35em;border-radius:3px;color:var(--teal)}
+
+.kw{color:#c084fc}.str{color:var(--green)}.cmt{color:var(--muted);font-style:italic}
+.fn-c{color:var(--blue)}.type{color:var(--amber)}.prop{color:var(--teal)}.dec{color:var(--accent)}
+
+.callout{padding:.9rem 1.1rem;border-radius:3px;border-left:3px solid;margin:.75rem 0;font-size:.875rem;line-height:1.6}
+.callout strong{font-weight:500}
+.info{background:#0a1522;border-color:var(--blue);color:#93c5fd}
+.warn{background:#141000;border-color:var(--amber);color:#fde68a}
+.tip{background:#071a0a;border-color:var(--green);color:#86efac}
+.danger{background:#160808;border-color:var(--red);color:#fca5a5}
+
+.flow{background:var(--s1);border:1px solid var(--border);border-radius:4px;padding:1.25rem;font-family:var(--mono);font-size:12px;line-height:2.2;margin:.75rem 0}
+.flow .arrow{color:var(--muted)}
+.flow .step-f{color:var(--text)}
+.flow .note-f{color:var(--muted);font-size:11px;padding-left:2rem}
+.flow .highlight{color:var(--green)}
+.flow .manual{color:var(--amber)}
+
+.check-grid{display:grid;grid-template-columns:1fr 1fr;gap:.4rem;margin:.5rem 0}
+.check-item{font-family:var(--mono);font-size:11px;color:var(--muted);padding:.2rem 0}
+.check-item::before{content:'□ ';color:var(--border)}
+
+table{width:100%;border-collapse:collapse;font-size:.875rem;margin:.75rem 0}
+th{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);text-align:left;padding:.5rem .75rem;border-bottom:2px solid var(--border)}
+td{padding:.5rem .75rem;border-bottom:1px solid var(--border);vertical-align:top}
+tr:last-child td{border-bottom:none}
+
+.order-list{counter-reset:step;list-style:none;margin:.5rem 0}
+.order-list li{counter-increment:step;display:flex;gap:.75rem;padding:.4rem 0;border-bottom:1px solid var(--border);font-size:.875rem;align-items:baseline}
+.order-list li:last-child{border-bottom:none}
+.order-list li::before{content:counter(step,'decimal-leading-zero');font-family:var(--mono);font-size:10px;color:var(--muted);flex-shrink:0;width:24px}
+.order-list .sys{font-family:var(--mono);font-size:10px;padding:.1em .4em;border-radius:3px;margin-left:auto;flex-shrink:0}
+
+p{margin-bottom:.6rem;font-size:.9375rem}
+ul{padding-left:1.4rem;margin:.4rem 0}
+li{margin:.25rem 0;font-size:.9375rem}
+hr{border:none;border-top:1px solid var(--border);margin:1.5rem 0}
+
+@media(max-width:800px){
+  .layout{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .header,.main{padding:1.5rem}
+  main{padding:1.5rem}
+  .check-grid{grid-template-columns:1fr}
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-eyebrow">Machinum / SA Rugby Bets / arclink</div>
+  <div class="header-title">Persona Dialogue Format — Complete Build Spec</div>
+  <div class="header-subtitle">Weekly automated fixture roundup, Kwagga & Marcus dialogue rendering, homepage integration. Covers arclink API, arclink Admin, and sarugbybets Angular frontend.</div>
+  <div class="header-tags">
+    <span class="tag tag-auto">Automated pipeline</span>
+    <span class="tag tag-api">arclink API</span>
+    <span class="tag tag-admin">arclink Admin</span>
+    <span class="tag tag-fe">sarugbybets Angular</span>
+  </div>
+</div>
+
+<div class="layout">
+<nav class="sidebar">
+  <div class="sidebar-section">Overview</div>
+  <a href="#vision"><span class="sn">00</span>Vision & flow</a>
+  <div class="sidebar-section">Automation</div>
+  <a href="#api-sports"><span class="sn">01</span>API-Sports service</a>
+  <a href="#fixture-scorer"><span class="sn">02</span>Fixture scoring</a>
+  <a href="#scheduler"><span class="sn">03</span>Tuesday scheduler</a>
+  <div class="sidebar-section">arclink Models</div>
+  <a href="#post-model"><span class="sn">04</span>Post model</a>
+  <a href="#queue-model"><span class="sn">05</span>TitleQueue model</a>
+  <a href="#tenant-model"><span class="sn">06</span>BlogTenant model</a>
+  <div class="sidebar-section">arclink API</div>
+  <a href="#parser"><span class="sn">07</span>Dialogue parser</a>
+  <a href="#generation"><span class="sn">08</span>Generation service</a>
+  <a href="#generate-route"><span class="sn">09</span>Generate route</a>
+  <a href="#featured-routes"><span class="sn">10</span>Featured endpoints</a>
+  <a href="#generate-now"><span class="sn">10b</span>Generate now endpoint</a>
+  <div class="sidebar-section">arclink Admin</div>
+  <a href="#admin-queue"><span class="sn">11</span>Queue UI</a>
+  <a href="#admin-list"><span class="sn">12</span>Post list badge</a>
+  <a href="#admin-preview"><span class="sn">13</span>Post preview</a>
+  <a href="#admin-editor"><span class="sn">14</span>Block editor</a>
+  <div class="sidebar-section">Angular Frontend</div>
+  <a href="#fe-models"><span class="sn">15</span>Models update</a>
+  <a href="#fe-service"><span class="sn">16</span>Blog service</a>
+  <a href="#fe-block"><span class="sn">17</span>DialogueBlock component</a>
+  <a href="#fe-fixture-section"><span class="sn">18</span>FixtureSection component</a>
+  <a href="#fe-roundup"><span class="sn">19</span>WeeklyRoundup component</a>
+  <a href="#fe-home"><span class="sn">20</span>HomeComponent</a>
+  <a href="#fe-detail"><span class="sn">21</span>ArticleDetail</a>
+  <a href="#fe-markdown"><span class="sn">22</span>MarkdownPipe</a>
+  <div class="sidebar-section">Reference</div>
+  <a href="#build-order"><span class="sn">→</span>Full build order</a>
+  <a href="#checklist"><span class="sn">→</span>Test checklist</a>
+  <a href="#content-format"><span class="sn">→</span>Content format</a>
+  <a href="#env-vars"><span class="sn">→</span>Env vars</a>
+</nav>
+
+<main>
+
+<!-- ===== VISION ===== -->
+<div class="phase" id="vision">
+  <div class="phase-header">
+    <span class="phase-num">00</span>
+    <span class="phase-title">Vision & Automated Flow</span>
+  </div>
+
+  <p>Every Tuesday at 06:00 SAST, the system automatically fetches upcoming rugby fixtures, scores them for SA audience relevance, selects the best 3–5, generates a Kwagga/Marcus dialogue roundup, and saves it as a draft. The editor reviews and promotes it to the homepage. No manual fixture entry needed.</p>
+
+  <div class="flow">
+<span class="highlight">TUESDAY 06:00 SAST — AUTOMATED</span>
+<span class="arrow">  ↓</span>
+<span class="step-f">  Cron fires → fetchUpcomingFixtures(rugby_union, 7 days)</span>
+<span class="note-f">  Calls API-Sports for URC, Currie Cup, Rugby Championship fixtures</span>
+<span class="arrow">  ↓</span>
+<span class="step-f">  scoreAndSelectFixtures() → top 3–5 by SA relevance score</span>
+<span class="note-f">  SA teams +50, URC +40, derby +25, weekend +20, Currie Cup +30</span>
+<span class="arrow">  ↓</span>
+<span class="step-f">  TitleQueue.create({ title, fixtures, is_weekly_roundup: true })</span>
+<span class="arrow">  ↓</span>
+<span class="step-f">  triggerGeneration() → Claude generates full dialogue roundup</span>
+<span class="note-f">  Both persona system prompts active, [FIXTURE:][KWAGGA][MARCUS] delimiters</span>
+<span class="arrow">  ↓</span>
+<span class="step-f">  Post saved as DRAFT with fixture_dialogues, article_format: weekly-roundup</span>
+
+<span class="manual">MANUAL — EDITOR (anytime Tuesday–Thursday)</span>
+<span class="arrow">  ↓</span>
+<span class="step-f">  Editor reviews draft in arclink admin</span>
+<span class="note-f">  Check fixture selection, review dialogue quality, edit blocks if needed</span>
+<span class="arrow">  ↓</span>
+<span class="step-f">  Editor publishes + clicks "Set as homepage"</span>
+<span class="arrow">  ↓</span>
+<span class="highlight">  sarugbybets.co.za homepage shows new weekly dialogue</span>
+<span class="note-f">  SA rugby bettors read Thursday–Sunday before placing weekend bets</span>
+  </div>
+
+  <div class="callout tip">
+    <strong>Tuesday 06:00 is intentional.</strong> Weekend fixtures are settled. Next weekend's fixtures are confirmed and being priced. Editors have Tuesday–Thursday to review. Bettors read Thursday–Friday. The cron runs at 04:00 UTC which is 06:00 SAST (Africa/Johannesburg, UTC+2).
+  </div>
+</div>
+
+<!-- ===== API-SPORTS ===== -->
+<div class="phase" id="api-sports">
+  <div class="phase-header">
+    <span class="phase-num">01</span>
+    <span class="phase-title">API-Sports Fixture Fetcher</span>
+    <div class="phase-badges"><span class="badge b-auto">new service</span><span class="badge b-api">arclink blog</span></div>
+  </div>
+
+  <div class="callout warn">
+    <strong>Sign up first.</strong> Go to api-sports.io, create a free account (100 req/day), get your API key. Then call <code>GET https://v1.rugby.api-sports.io/leagues</code> with your key to confirm the exact league IDs for URC, Currie Cup, and Rugby Championship before hardcoding them.
+  </div>
+
+  <pre><span class="fn">arclink/services/blog/src/services/api-sports.ts</span>
+<span class="kw">import</span> axios <span class="kw">from</span> <span class="str">'axios'</span>;
+
+<span class="kw">const</span> <span class="dec">BASE</span> = <span class="str">'https://v1.rugby.api-sports.io'</span>;
+<span class="kw">const</span> <span class="dec">KEY</span> = process.env[<span class="str">'API_SPORTS_KEY'</span>]!;
+
+<span class="cmt">// Confirm these IDs by calling GET /leagues first</span>
+<span class="kw">const</span> <span class="dec">LEAGUE_IDS</span>: Record&lt;<span class="type">string</span>, <span class="type">number</span>[]&gt; = {
+  rugby_union: [
+    <span class="str">61</span>,   <span class="cmt">// URC — VERIFY</span>
+    <span class="str">116</span>,  <span class="cmt">// Currie Cup — VERIFY</span>
+    <span class="str">58</span>,   <span class="cmt">// Rugby Championship — VERIFY</span>
+    <span class="str">48</span>,   <span class="cmt">// Super Rugby Pacific — VERIFY</span>
+  ]
+};
+
+<span class="kw">export interface</span> <span class="type">ApiSportsFixture</span> {
+  id: <span class="type">number</span>;
+  homeTeam: <span class="type">string</span>;
+  awayTeam: <span class="type">string</span>;
+  competition: <span class="type">string</span>;
+  venue: <span class="type">string</span>;
+  kickoff: <span class="type">string</span>;   <span class="cmt">// ISO string</span>
+  matchLabel: <span class="type">string</span>; <span class="cmt">// e.g. "Bulls vs Sharks · Loftus · Sat 17:00"</span>
+}
+
+<span class="kw">export async function</span> <span class="fn-c">fetchUpcomingFixtures</span>(
+  sport: <span class="type">string</span>,
+  daysAhead: <span class="type">number</span>
+): Promise&lt;<span class="type">ApiSportsFixture</span>[]&gt; {
+
+  <span class="kw">const</span> leagueIds = <span class="dec">LEAGUE_IDS</span>[sport] ?? [];
+  <span class="kw">const</span> fixtures: <span class="type">ApiSportsFixture</span>[] = [];
+  <span class="kw">const</span> season = <span class="kw">new</span> Date().getFullYear();
+
+  <span class="kw">for</span> (<span class="kw">const</span> leagueId <span class="kw">of</span> leagueIds) {
+    <span class="kw">try</span> {
+      <span class="kw">const</span> { data } = <span class="kw">await</span> axios.get(`${<span class="dec">BASE</span>}/games`, {
+        headers: { <span class="str">'x-apisports-key'</span>: <span class="dec">KEY</span> },
+        params: { league: leagueId, season, next: daysAhead }
+      });
+      fixtures.push(...(data.response ?? []).<span class="fn-c">map</span>(<span class="fn-c">mapFixture</span>));
+    } <span class="kw">catch</span> (err) {
+      console.error(`[API-Sports] League ${leagueId} failed:`, err);
+    }
+  }
+
+  <span class="kw">return</span> fixtures;
+}
+
+<span class="kw">function</span> <span class="fn-c">mapFixture</span>(g: <span class="kw">any</span>): <span class="type">ApiSportsFixture</span> {
+  <span class="kw">const</span> kickoff = <span class="kw">new</span> Date(g.date);
+  <span class="kw">const</span> day = kickoff.<span class="fn-c">toLocaleDateString</span>(<span class="str">'en-ZA'</span>, {
+    weekday: <span class="str">'short'</span>, timeZone: <span class="str">'Africa/Johannesburg'</span>
+  });
+  <span class="kw">const</span> time = kickoff.<span class="fn-c">toLocaleTimeString</span>(<span class="str">'en-ZA'</span>, {
+    hour: <span class="str">'2-digit'</span>, minute: <span class="str">'2-digit'</span>, timeZone: <span class="str">'Africa/Johannesburg'</span>
+  });
+  <span class="kw">return</span> {
+    id: g.id,
+    homeTeam: g.teams.home.name,
+    awayTeam: g.teams.away.name,
+    competition: g.league.name,
+    venue: g.venue?.name ?? <span class="str">'TBC'</span>,
+    kickoff: g.date,
+    matchLabel: `${g.teams.home.name} vs ${g.teams.away.name} · ${g.venue?.name ?? <span class="str">'TBC'</span>} · ${day} ${time}`
+  };
+}</pre>
+</div>
+
+<!-- ===== FIXTURE SCORER ===== -->
+<div class="phase" id="fixture-scorer">
+  <div class="phase-header">
+    <span class="phase-num">02</span>
+    <span class="phase-title">Fixture Scoring & Selection</span>
+    <div class="phase-badges"><span class="badge b-auto">new service</span><span class="badge b-api">arclink blog</span></div>
+  </div>
+
+  <p>Scores each fixture for SA audience relevance. SA teams and derbies score highest. Competitions ranked by local interest. Weekend timing boosted because SA bettors bet on weekends.</p>
+
+  <pre><span class="fn">arclink/services/blog/src/services/fixture-selector.ts</span>
+<span class="kw">import</span> { <span class="type">ApiSportsFixture</span> } <span class="kw">from</span> <span class="str">'./api-sports'</span>;
+
+<span class="kw">const</span> <span class="dec">SA_TEAMS</span> = [
+  <span class="str">'Bulls'</span>, <span class="str">'Stormers'</span>, <span class="str">'Lions'</span>, <span class="str">'Sharks'</span>, <span class="str">'Cheetahs'</span>,
+  <span class="str">'South Africa'</span>, <span class="str">'Springboks'</span>
+];
+
+<span class="kw">const</span> <span class="dec">COMPETITION_SCORES</span>: Record&lt;<span class="type">string</span>, <span class="type">number</span>&gt; = {
+  <span class="str">'URC'</span>: <span class="str">40</span>, <span class="str">'United Rugby Championship'</span>: <span class="str">40</span>,
+  <span class="str">'Rugby Championship'</span>: <span class="str">35</span>,
+  <span class="str">'Currie Cup'</span>: <span class="str">30</span>,
+  <span class="str">'Super Rugby Pacific'</span>: <span class="str">20</span>,
+  <span class="str">'Six Nations'</span>: <span class="str">15</span>,
+  <span class="str">'Premiership Rugby'</span>: <span class="str">10</span>,
+};
+
+<span class="kw">const</span> <span class="dec">SA_DERBIES</span> = [
+  [<span class="str">'Bulls'</span>, <span class="str">'Lions'</span>], [<span class="str">'Bulls'</span>, <span class="str">'Sharks'</span>],
+  [<span class="str">'Stormers'</span>, <span class="str">'Sharks'</span>], [<span class="str">'Stormers'</span>, <span class="str">'Lions'</span>],
+  [<span class="str">'Lions'</span>, <span class="str">'Sharks'</span>], [<span class="str">'Bulls'</span>, <span class="str">'Stormers'</span>],
+];
+
+<span class="kw">export function</span> <span class="fn-c">scoreAndSelectFixtures</span>(
+  fixtures: <span class="type">ApiSportsFixture</span>[],
+  max = <span class="str">5</span>
+): <span class="type">ApiSportsFixture</span>[] {
+
+  <span class="kw">const</span> scored = fixtures.<span class="fn-c">map</span>(f => {
+    <span class="kw">let</span> score = <span class="str">0</span>;
+    <span class="kw">const</span> home = f.homeTeam;
+    <span class="kw">const</span> away = f.awayTeam;
+
+    <span class="cmt">// SA team involvement</span>
+    <span class="kw">if</span> (<span class="dec">SA_TEAMS</span>.<span class="fn-c">some</span>(t => home.<span class="fn-c">includes</span>(t) || away.<span class="fn-c">includes</span>(t)))
+      score += <span class="str">50</span>;
+
+    <span class="cmt">// Competition tier</span>
+    <span class="kw">for</span> (<span class="kw">const</span> [comp, pts] <span class="kw">of</span> Object.<span class="fn-c">entries</span>(<span class="dec">COMPETITION_SCORES</span>)) {
+      <span class="kw">if</span> (f.competition.<span class="fn-c">includes</span>(comp)) { score += pts; <span class="kw">break</span>; }
+    }
+
+    <span class="cmt">// Weekend timing</span>
+    <span class="kw">const</span> day = <span class="kw">new</span> Date(f.kickoff).<span class="fn-c">getDay</span>();
+    <span class="kw">if</span> (day === <span class="str">6</span> || day === <span class="str">0</span>) score += <span class="str">20</span>;
+    <span class="kw">if</span> (day === <span class="str">5</span>) score += <span class="str">10</span>;
+
+    <span class="cmt">// SA derby bonus</span>
+    <span class="kw">if</span> (<span class="dec">SA_DERBIES</span>.<span class="fn-c">some</span>(([a, b]) =>
+      (home.<span class="fn-c">includes</span>(a) && away.<span class="fn-c">includes</span>(b)) ||
+      (home.<span class="fn-c">includes</span>(b) && away.<span class="fn-c">includes</span>(a))
+    )) score += <span class="str">25</span>;
+
+    <span class="kw">return</span> { fixture: f, score };
+  });
+
+  <span class="kw">return</span> scored
+    .<span class="fn-c">sort</span>((a, b) => b.score - a.score)
+    .<span class="fn-c">slice</span>(<span class="str">0</span>, max)
+    .<span class="fn-c">map</span>(s => s.fixture);
+}</pre>
+</div>
+
+<!-- ===== SCHEDULER ===== -->
+<div class="phase" id="scheduler">
+  <div class="phase-header">
+    <span class="phase-num">03</span>
+    <span class="phase-title">Tuesday Scheduler</span>
+    <div class="phase-badges"><span class="badge b-auto">new file</span><span class="badge b-api">arclink blog</span></div>
+  </div>
+
+  <pre><span class="fn">arclink/services/blog/src/scheduler-weekly-roundup.ts</span>
+<span class="kw">import</span> cron <span class="kw">from</span> <span class="str">'node-cron'</span>;
+<span class="kw">import</span> { <span class="fn-c">fetchUpcomingFixtures</span> } <span class="kw">from</span> <span class="str">'./services/api-sports'</span>;
+<span class="kw">import</span> { <span class="fn-c">scoreAndSelectFixtures</span> } <span class="kw">from</span> <span class="str">'./services/fixture-selector'</span>;
+<span class="kw">import</span> { <span class="fn-c">generatePost</span> } <span class="kw">from</span> <span class="str">'./services/claude'</span>;
+<span class="kw">import</span> { BlogTenant } <span class="kw">from</span> <span class="str">'./models/BlogTenant'</span>;
+<span class="kw">import</span> { TitleQueue } <span class="kw">from</span> <span class="str">'./models/TitleQueue'</span>;
+<span class="kw">import</span> { Post } <span class="kw">from</span> <span class="str">'./models/Post'</span>;
+<span class="kw">import</span> { <span class="fn-c">parseWeeklyRoundup</span> } <span class="kw">from</span> <span class="str">'./utils/dialogue-parser'</span>;
+
+<span class="cmt">// Tuesday 06:00 SAST = Tuesday 04:00 UTC</span>
+cron.<span class="fn-c">schedule</span>(<span class="str">'0 4 * * 2'</span>, <span class="kw">async</span> () => {
+  console.log(<span class="str">'[Weekly Roundup] Cron fired'</span>);
+
+  <span class="kw">const</span> tenants = <span class="kw">await</span> BlogTenant.<span class="fn-c">find</span>({
+    active: <span class="kw">true</span>,
+    sport_key: { $exists: <span class="kw">true</span> }
+  });
+
+  <span class="kw">for</span> (<span class="kw">const</span> tenant <span class="kw">of</span> tenants) {
+    <span class="kw">try</span> {
+      <span class="kw">await</span> <span class="fn-c">runWeeklyRoundup</span>(tenant);
+    } <span class="kw">catch</span> (err) {
+      console.error(`[Weekly Roundup] Failed for ${tenant.name}:`, err);
+    }
+  }
+});
+
+<span class="kw">export async function</span> <span class="fn-c">runWeeklyRoundup</span>(tenant: <span class="type">IBlogTenant</span>) {
+  <span class="cmt">// 1. Fetch fixtures</span>
+  <span class="kw">const</span> raw = <span class="kw">await</span> <span class="fn-c">fetchUpcomingFixtures</span>(tenant.sport_key, <span class="str">7</span>);
+  <span class="kw">if</span> (!raw.length) {
+    console.log(`[Weekly Roundup] No fixtures for ${tenant.name} — skipping`);
+    <span class="kw">return</span>;
+  }
+
+  <span class="cmt">// 2. Score and select</span>
+  <span class="kw">const</span> selected = <span class="fn-c">scoreAndSelectFixtures</span>(raw);
+
+  <span class="cmt">// 3. Build title</span>
+  <span class="kw">const</span> date = <span class="kw">new</span> Date().<span class="fn-c">toLocaleDateString</span>(<span class="str">'en-ZA'</span>, {
+    day: <span class="str">'numeric'</span>, month: <span class="str">'long'</span>, year: <span class="str">'numeric'</span>
+  });
+  <span class="kw">const</span> title = `${tenant.sport_label} Weekend Preview — ${date}`;
+
+  <span class="cmt">// 4. Generate directly (skip queue for automation)</span>
+  <span class="kw">const</span> generated = <span class="kw">await</span> <span class="fn-c">generatePost</span>(tenant, title, <span class="kw">undefined</span>, selected);
+  <span class="kw">const</span> parsed = <span class="fn-c">parseWeeklyRoundup</span>(generated.content);
+
+  <span class="cmt">// 5. Save as draft</span>
+  <span class="kw">await</span> Post.<span class="fn-c">create</span>({
+    tenant_id: tenant.id,
+    title,
+    slug: generated.slug,
+    content: generated.content,
+    excerpt: generated.excerpt,
+    seo_title: generated.seo_title,
+    seo_description: generated.seo_description,
+    tags: generated.tags,
+    categories: generated.categories,
+    article_format: <span class="str">'weekly-roundup'</span>,
+    dialogue_blocks: parsed.fixtures.<span class="fn-c">flatMap</span>(f => f.blocks),
+    fixture_dialogues: parsed.fixtures,
+    fixture_list: selected,
+    featured: <span class="kw">false</span>,
+    status: <span class="str">'draft'</span>,   <span class="cmt">// always draft — editor promotes</span>
+    generated: <span class="kw">true</span>,
+    reading_time: generated.reading_time,
+    word_count: generated.word_count,
+    created_at: <span class="kw">new</span> Date(),
+  });
+
+  console.log(`[Weekly Roundup] Draft saved: "${title}" (${selected.length} fixtures)`);
+}
+<span class="cmt">// Register in index.ts: import './scheduler-weekly-roundup';</span></pre>
+
+  <div class="callout info">
+    <strong>Manual trigger for testing.</strong> Call <code>runWeeklyRoundup(tenant)</code> directly from a test script to verify the pipeline without waiting for Tuesday. Export it from the scheduler file as shown above.
+  </div>
+</div>
+
+<!-- ===== MODELS ===== -->
+<div class="phase" id="post-model">
+  <div class="phase-header">
+    <span class="phase-num">04</span>
+    <span class="phase-title">Post Model — New Fields</span>
+    <div class="phase-badges"><span class="badge b-api">arclink blog</span></div>
+  </div>
+
+  <pre><span class="fn">arclink/services/blog/src/models/Post.ts — add to interface and schema</span>
+<span class="cmt">// Interface additions</span>
+article_format: <span class="str">'standard'</span> | <span class="str">'dialogue'</span> | <span class="str">'weekly-roundup'</span>;
+featured: <span class="type">boolean</span>;
+fixture_list: <span class="type">FixtureEntry</span>[];
+fixture_dialogues: <span class="type">FixtureDialogue</span>[];
+dialogue_blocks: <span class="type">DialogueBlock</span>[];
+
+<span class="cmt">// Types</span>
+<span class="kw">export interface</span> <span class="type">FixtureEntry</span> {
+  homeTeam: <span class="type">string</span>;
+  awayTeam: <span class="type">string</span>;
+  competition: <span class="type">string</span>;
+  venue: <span class="type">string</span>;
+  kickoff: <span class="type">string</span>;
+  matchLabel: <span class="type">string</span>;
+}
+<span class="kw">export interface</span> <span class="type">DialogueBlock</span> {
+  persona: <span class="type">string</span>;
+  content: <span class="type">string</span>;
+  order: <span class="type">number</span>;
+}
+<span class="kw">export interface</span> <span class="type">FixtureDialogue</span> {
+  matchLabel: <span class="type">string</span>;
+  blocks: <span class="type">DialogueBlock</span>[];
+}
+
+<span class="cmt">// Schema additions</span>
+article_format: { type: <span class="type">String</span>, enum: [<span class="str">'standard'</span>, <span class="str">'dialogue'</span>, <span class="str">'weekly-roundup'</span>], default: <span class="str">'standard'</span> },
+featured: { type: <span class="type">Boolean</span>, default: <span class="kw">false</span> },
+fixture_list: { type: [{ homeTeam: <span class="type">String</span>, awayTeam: <span class="type">String</span>, competition: <span class="type">String</span>, venue: <span class="type">String</span>, kickoff: <span class="type">String</span>, matchLabel: <span class="type">String</span> }], default: [] },
+dialogue_blocks: { type: [{ persona: <span class="type">String</span>, content: <span class="type">String</span>, order: <span class="type">Number</span> }], default: [] },
+fixture_dialogues: { type: [{ matchLabel: <span class="type">String</span>, blocks: [{ persona: <span class="type">String</span>, content: <span class="type">String</span>, order: <span class="type">Number</span> }] }], default: [] },</pre>
+</div>
+
+<div class="phase" id="queue-model">
+  <div class="phase-header">
+    <span class="phase-num">05</span>
+    <span class="phase-title">TitleQueue Model — New Fields</span>
+    <div class="phase-badges"><span class="badge b-api">arclink blog</span></div>
+  </div>
+
+  <pre><span class="fn">arclink/services/blog/src/models/TitleQueue.ts — add to interface and schema</span>
+persona?: <span class="type">string</span>;         <span class="cmt">// 'kwagga' | 'marcus' | null (auto-alternate)</span>
+fixtures: <span class="type">FixtureEntry</span>[]; <span class="cmt">// populated for weekly roundup entries</span>
+is_weekly_roundup: <span class="type">boolean</span>;
+
+<span class="cmt">// Schema</span>
+persona: { type: <span class="type">String</span>, default: <span class="kw">null</span> },
+fixtures: { type: [{ homeTeam: <span class="type">String</span>, awayTeam: <span class="type">String</span>, competition: <span class="type">String</span>, venue: <span class="type">String</span>, kickoff: <span class="type">String</span>, matchLabel: <span class="type">String</span> }], default: [] },
+is_weekly_roundup: { type: <span class="type">Boolean</span>, default: <span class="kw">false</span> },</pre>
+</div>
+
+<div class="phase" id="tenant-model">
+  <div class="phase-header">
+    <span class="phase-num">06</span>
+    <span class="phase-title">BlogTenant Model — Sport Fields</span>
+    <div class="phase-badges"><span class="badge b-api">arclink blog</span></div>
+  </div>
+
+  <pre><span class="fn">arclink/services/blog/src/models/BlogTenant.ts — add to interface and schema</span>
+sport_key: <span class="type">string</span>;   <span class="cmt">// 'rugby_union' | 'soccer_psl' etc — drives API-Sports fetch</span>
+sport_label: <span class="type">string</span>; <span class="cmt">// 'Rugby' | 'Football' — used in post title</span>
+
+<span class="cmt">// Schema</span>
+sport_key: { type: <span class="type">String</span>, default: <span class="str">''</span> },
+sport_label: { type: <span class="type">String</span>, default: <span class="str">''</span> },
+
+<span class="cmt">// Seed script — update seed-betwise-rugby.ts to include:</span>
+sport_key: <span class="str">'rugby_union'</span>,
+sport_label: <span class="str">'Rugby'</span>,</pre>
+</div>
+
+<!-- ===== PARSER ===== -->
+<div class="phase" id="parser">
+  <div class="phase-header">
+    <span class="phase-num">07</span>
+    <span class="phase-title">Dialogue Parser — New Utility</span>
+    <div class="phase-badges"><span class="badge b-new">new file</span><span class="badge b-api">arclink blog</span></div>
+  </div>
+
+  <pre><span class="fn">arclink/services/blog/src/utils/dialogue-parser.ts</span>
+<span class="kw">export interface</span> <span class="type">DialogueBlock</span> { persona: <span class="type">string</span>; content: <span class="type">string</span>; order: <span class="type">number</span>; }
+<span class="kw">export interface</span> <span class="type">FixtureDialogue</span> { matchLabel: <span class="type">string</span>; blocks: <span class="type">DialogueBlock</span>[]; }
+<span class="kw">export interface</span> <span class="type">ParsedWeeklyRoundup</span> { fixtures: <span class="type">FixtureDialogue</span>[]; isValid: <span class="type">boolean</span>; error?: <span class="type">string</span>; }
+
+<span class="kw">export function</span> <span class="fn-c">parseDialogueContent</span>(raw: <span class="type">string</span>): { blocks: <span class="type">DialogueBlock</span>[]; isValid: <span class="type">boolean</span>; error?: <span class="type">string</span> } {
+  <span class="kw">const</span> re = /\[(KWAGGA|MARCUS)\]([\s\S]*?)\[\/(KWAGGA|MARCUS)\]/gi;
+  <span class="kw">const</span> blocks: <span class="type">DialogueBlock</span>[] = [];
+  <span class="kw">let</span> m, order = <span class="str">1</span>;
+  <span class="kw">while</span> ((m = re.<span class="fn-c">exec</span>(raw)) !== <span class="kw">null</span>) {
+    <span class="kw">if</span> (m[<span class="str">1</span>].toLowerCase() !== m[<span class="str">3</span>].toLowerCase())
+      <span class="kw">return</span> { blocks: [], isValid: <span class="kw">false</span>, error: <span class="str">'Mismatched tags'</span> };
+    blocks.<span class="fn-c">push</span>({ persona: m[<span class="str">1</span>].toLowerCase(), content: m[<span class="str">2</span>].trim(), order: order++ });
+  }
+  <span class="kw">if</span> (blocks.length < <span class="str">2</span>) <span class="kw">return</span> { blocks: [], isValid: <span class="kw">false</span>, error: <span class="str">'Too few blocks'</span> };
+  <span class="kw">return</span> { blocks, isValid: <span class="kw">true</span> };
+}
+
+<span class="kw">export function</span> <span class="fn-c">parseWeeklyRoundup</span>(raw: <span class="type">string</span>): <span class="type">ParsedWeeklyRoundup</span> {
+  <span class="kw">const</span> re = /\[FIXTURE:\s*([^\]]+)\]([\s\S]*?)\[\/FIXTURE\]/gi;
+  <span class="kw">const</span> fixtures: <span class="type">FixtureDialogue</span>[] = [];
+  <span class="kw">let</span> m;
+  <span class="kw">while</span> ((m = re.<span class="fn-c">exec</span>(raw)) !== <span class="kw">null</span>) {
+    <span class="kw">const</span> parsed = <span class="fn-c">parseDialogueContent</span>(m[<span class="str">2</span>]);
+    <span class="kw">if</span> (!parsed.isValid) <span class="kw">return</span> { fixtures: [], isValid: <span class="kw">false</span>, error: parsed.error };
+    fixtures.<span class="fn-c">push</span>({ matchLabel: m[<span class="str">1</span>].trim(), blocks: parsed.blocks });
+  }
+  <span class="kw">if</span> (!fixtures.length) {
+    <span class="cmt">// Single fixture fallback (no [FIXTURE:] wrapper)</span>
+    <span class="kw">const</span> parsed = <span class="fn-c">parseDialogueContent</span>(raw);
+    <span class="kw">if</span> (parsed.isValid) <span class="kw">return</span> { fixtures: [{ matchLabel: <span class="str">''</span>, blocks: parsed.blocks }], isValid: <span class="kw">true</span> };
+    <span class="kw">return</span> { fixtures: [], isValid: <span class="kw">false</span>, error: <span class="str">'No fixture blocks found'</span> };
+  }
+  <span class="kw">return</span> { fixtures, isValid: <span class="kw">true</span> };
+}</pre>
+</div>
+
+<!-- ===== GENERATION ===== -->
+<div class="phase" id="generation">
+  <div class="phase-header">
+    <span class="phase-num">08</span>
+    <span class="phase-title">Generation Service — claude.ts Updates</span>
+    <div class="phase-badges"><span class="badge b-api">arclink blog</span></div>
+  </div>
+
+  <pre><span class="fn">arclink/services/blog/src/services/claude.ts — key changes</span>
+<span class="cmt">// Extended signature</span>
+<span class="kw">export async function</span> <span class="fn-c">generatePost</span>(
+  tenant: <span class="type">IBlogTenant</span>,
+  title: <span class="type">string</span>,
+  personaTag?: <span class="type">string</span>,
+  fixtures?: <span class="type">FixtureEntry</span>[]   <span class="cmt">// NEW — weekly roundup</span>
+): Promise&lt;<span class="type">GeneratedPost</span>&gt;
+
+<span class="cmt">// Route selection logic</span>
+<span class="kw">const</span> isRoundup = !!fixtures?.length;
+
+<span class="kw">const</span> systemPrompt = isRoundup
+  ? <span class="fn-c">buildCombinedSystem</span>(tenant)      <span class="cmt">// both personas in system</span>
+  : personaTag
+    ? tenant.blog_persona_prompts?.get(personaTag)  <span class="cmt">// single persona</span>
+    : <span class="kw">undefined</span>;                       <span class="cmt">// fallback to blog_tone</span>
+
+<span class="kw">const</span> userMessage = isRoundup
+  ? <span class="fn-c">buildRoundupMessage</span>(tenant, title, fixtures)
+  : personaTag
+    ? <span class="fn-c">buildPersonaMessage</span>(tenant, title, personaTag)
+    : <span class="fn-c">buildDefaultMessage</span>(tenant, title);
+
+<span class="kw">const</span> response = <span class="kw">await</span> anthropic.messages.<span class="fn-c">create</span>({
+  model: <span class="str">'claude-opus-4-6'</span>,
+  max_tokens: isRoundup ? <span class="str">5000</span> : <span class="str">2000</span>,
+  ...(systemPrompt && { system: systemPrompt }),
+  messages: [{ role: <span class="str">'user'</span>, content: userMessage }]
+});
+
+<span class="cmt">// buildCombinedSystem — both personas in one system prompt</span>
+<span class="kw">function</span> <span class="fn-c">buildCombinedSystem</span>(tenant: <span class="type">IBlogTenant</span>): <span class="type">string</span> {
+  <span class="kw">const</span> kwagga = tenant.blog_persona_prompts?.get(<span class="str">'kwagga'</span>) ?? <span class="str">''</span>;
+  <span class="kw">const</span> marcus = tenant.blog_persona_prompts?.get(<span class="str">'marcus'</span>) ?? <span class="str">''</span>;
+  <span class="kw">return</span> `You write as TWO alternating personas.
+
+KWAGGA (writes [KWAGGA] blocks):
+${kwagga}
+
+MARCUS (writes [MARCUS] blocks):
+${marcus}
+
+Switch fully into each persona per block. Genuine disagreement is expected.
+Marcus acknowledges Kwagga's point before building his own angle.`;
+}
+
+<span class="cmt">// buildRoundupMessage — fixture list drives structure</span>
+<span class="kw">function</span> <span class="fn-c">buildRoundupMessage</span>(tenant, title, fixtures): <span class="type">string</span> {
+  <span class="kw">const</span> list = fixtures.<span class="fn-c">map</span>((f, i) => `${i+<span class="str">1</span>}. ${f.matchLabel}`).join(<span class="str">'\n'</span>);
+  <span class="kw">return</span> `Write a weekly rugby betting dialogue: "${title}"
+
+Fixtures:
+${list}
+
+For EACH fixture use this exact structure:
+
+[FIXTURE: {matchLabel}]
+[KWAGGA]
+Kwagga's analysis (150-180 words). Ends with: Bet at [Bookmaker] on [selection].
+[/KWAGGA]
+[MARCUS]
+Marcus's response (150-180 words). References Kwagga by name.
+Ends with: Bet at [Bookmaker] on [selection].
+[/MARCUS]
+[/FIXTURE]
+
+Rules:
+- Different bookmakers across fixtures where possible
+- Kwagga: set piece, conditions, provincial lens
+- Marcus: defensive structure, market inefficiency lens
+- They may disagree — that is the point
+- Nothing outside the delimiters
+
+JSON frontmatter first:
+{ "seo_title": "...", "seo_description": "...", "excerpt": "...",
+  "categories": ["Fixture Previews"],
+  "tags": ["kwagga","marcus","urc","fixture-preview","weekly-roundup"] }`;
+}</pre>
+</div>
+
+<!-- ===== FEATURED ROUTES ===== -->
+<div class="phase" id="featured-routes">
+  <div class="phase-header">
+    <span class="phase-num">10</span>
+    <span class="phase-title">Featured Endpoints — Two New Routes</span>
+    <div class="phase-badges"><span class="badge b-new">new routes</span><span class="badge b-api">arclink blog</span></div>
+  </div>
+
+  <pre><span class="fn">arclink/services/blog/src/routes/posts.ts — add these two routes</span>
+
+<span class="cmt">// GET /posts/:tenantId/featured — homepage fetches this</span>
+router.get(<span class="str">'/:tenantId/featured'</span>, <span class="fn-c">resolveTenant</span>, <span class="kw">async</span> (req, res) => {
+  <span class="kw">const</span> post = <span class="kw">await</span> Post.<span class="fn-c">findOne</span>({
+    tenant_id: req.params.tenantId,
+    featured: <span class="kw">true</span>,
+    status: <span class="str">'published'</span>
+  }).<span class="fn-c">sort</span>({ published_at: -<span class="str">1</span> });
+  <span class="kw">if</span> (!post) <span class="kw">return</span> res.<span class="fn-c">status</span>(<span class="str">404</span>).<span class="fn-c">json</span>({ error: <span class="str">'No featured post'</span> });
+  res.<span class="fn-c">json</span>({ post });
+});
+
+<span class="cmt">// POST /posts/:tenantId/:postId/feature — editor promotes roundup to homepage</span>
+router.post(<span class="str">'/:tenantId/:postId/feature'</span>, <span class="fn-c">resolveTenant</span>, <span class="kw">async</span> (req, res) => {
+  <span class="cmt">// Unpin previous</span>
+  <span class="kw">await</span> Post.<span class="fn-c">updateMany</span>(
+    { tenant_id: req.params.tenantId, featured: <span class="kw">true</span> },
+    { $set: { featured: <span class="kw">false</span> } }
+  );
+  <span class="cmt">// Pin this one</span>
+  <span class="kw">const</span> post = <span class="kw">await</span> Post.<span class="fn-c">findOneAndUpdate</span>(
+    { tenant_id: req.params.tenantId, _id: req.params.postId },
+    { $set: { featured: <span class="kw">true</span> } },
+    { new: <span class="kw">true</span> }
+  );
+  res.<span class="fn-c">json</span>({ post });
+});</pre>
+</div>
+
+<!-- ===== GENERATE NOW ===== -->
+<div class="phase" id="generate-now">
+  <div class="phase-header">
+    <span class="phase-num">10b</span>
+    <span class="phase-title">Generate Now — Manual Trigger</span>
+    <div class="phase-badges"><span class="badge b-new">new route</span><span class="badge b-api">arclink blog</span><span class="badge b-admin">arclink admin</span></div>
+  </div>
+
+  <p>Runs the exact same pipeline as the Tuesday cron on demand. Use this to populate content immediately for testing without waiting for the scheduled job. Saves as draft — editor still reviews and promotes manually.</p>
+
+  <pre><span class="fn">arclink/services/blog/src/routes/posts.ts — add third route</span>
+
+<span class="cmt">// POST /posts/:tenantId/generate-roundup</span>
+<span class="cmt">// Manually triggers the weekly roundup pipeline — same as cron, saves as draft</span>
+router.post(<span class="str">'/:tenantId/generate-roundup'</span>, <span class="fn-c">resolveTenant</span>, <span class="kw">async</span> (req, res) => {
+  <span class="kw">const</span> tenant = req.tenant!;
+  <span class="kw">try</span> {
+    <span class="kw">const</span> { <span class="fn-c">runWeeklyRoundup</span> } = <span class="kw">await import</span>(<span class="str">'../scheduler-weekly-roundup'</span>);
+    <span class="kw">await</span> <span class="fn-c">runWeeklyRoundup</span>(tenant);
+
+    <span class="cmt">// Return the newly created draft</span>
+    <span class="kw">const</span> post = <span class="kw">await</span> Post.<span class="fn-c">findOne</span>({
+      tenant_id: tenant.id,
+      article_format: <span class="str">'weekly-roundup'</span>,
+      status: <span class="str">'draft'</span>
+    }).<span class="fn-c">sort</span>({ created_at: -<span class="str">1</span> });
+
+    res.<span class="fn-c">json</span>({ ok: <span class="kw">true</span>, post });
+  } <span class="kw">catch</span> (err: <span class="kw">any</span>) {
+    res.<span class="fn-c">status</span>(<span class="str">500</span>).<span class="fn-c">json</span>({ ok: <span class="kw">false</span>, error: err.message });
+  }
+});</pre>
+
+  <div class="callout info">
+    <strong>Takes 30–60 seconds.</strong> The pipeline fetches fixtures from API-Sports then waits for Claude to generate the full dialogue. The admin button disables during generation and shows a spinner.
+  </div>
+
+  <pre><span class="fn">arclink/admin/src/app/features/blog/published/published.component.html — page header</span>
+
+&lt;div class=<span class="str">"page-header"</span>&gt;
+  &lt;h1&gt;Posts&lt;/h1&gt;
+
+  &lt;button (click)=<span class="str">"generateRoundupNow()"</span>
+          [disabled]=<span class="str">"generating()"</span>
+          class=<span class="str">"btn-generate-roundup"</span>&gt;
+    @if (generating()) {
+      &lt;span class=<span class="str">"spinner"</span>&gt;&lt;/span&gt; Generating...
+    } @else {
+      ⚡ Generate weekly roundup now
+    }
+  &lt;/button&gt;
+&lt;/div&gt;
+
+@if (generateResult()) {
+  &lt;div class=<span class="str">"alert-success"</span>&gt;
+    Draft created: "{{ generateResult()!.title }}" —
+    &lt;a [routerLink]=<span class="str">"['/blog/drafts']"</span>&gt;View in drafts →&lt;/a&gt;
+  &lt;/div&gt;
+}
+@if (generateError()) {
+  &lt;div class=<span class="str">"alert-error"</span>&gt;{{ generateError() }}&lt;/div&gt;
+}</pre>
+
+  <pre><span class="fn">published.component.ts — add signals and method</span>
+
+generating = <span class="fn-c">signal</span>(<span class="kw">false</span>);
+generateResult = <span class="fn-c">signal</span>&lt;<span class="type">Post</span> | <span class="kw">null</span>&gt;(<span class="kw">null</span>);
+generateError = <span class="fn-c">signal</span>&lt;<span class="type">string</span> | <span class="kw">null</span>&gt;(<span class="kw">null</span>);
+
+<span class="fn-c">generateRoundupNow</span>() {
+  <span class="kw">this</span>.generating.<span class="fn-c">set</span>(<span class="kw">true</span>);
+  <span class="kw">this</span>.generateResult.<span class="fn-c">set</span>(<span class="kw">null</span>);
+  <span class="kw">this</span>.generateError.<span class="fn-c">set</span>(<span class="kw">null</span>);
+
+  <span class="kw">this</span>.blogApi.<span class="fn-c">generateRoundupNow</span>().<span class="fn-c">subscribe</span>({
+    next: (res) => {
+      <span class="kw">this</span>.generating.<span class="fn-c">set</span>(<span class="kw">false</span>);
+      <span class="kw">this</span>.generateResult.<span class="fn-c">set</span>(res.post);
+      <span class="kw">this</span>.<span class="fn-c">loadPosts</span>();
+    },
+    error: (err) => {
+      <span class="kw">this</span>.generating.<span class="fn-c">set</span>(<span class="kw">false</span>);
+      <span class="kw">this</span>.generateError.<span class="fn-c">set</span>(err.error?.error ?? <span class="str">'Generation failed — check Railway logs'</span>);
+    }
+  });
+}</pre>
+
+  <pre><span class="fn">arclink/admin/src/app/core/services/blog-api.service.ts — add method</span>
+
+<span class="fn-c">generateRoundupNow</span>() {
+  <span class="kw">return this</span>.http.<span class="fn-c">post</span>&lt;{ ok: <span class="type">boolean</span>; post: <span class="type">Post</span> }&gt;(
+    `${<span class="kw">this</span>.base}/posts/${<span class="kw">this</span>.tenantId}/generate-roundup`,
+    {},
+    { headers: <span class="kw">this</span>.headers }
+  );
+}</pre>
+</div>
+
+<!-- ===== ADMIN ===== -->
+<div class="phase" id="admin-list">
+  <div class="phase-header">
+    <span class="phase-num">12</span>
+    <span class="phase-title">Admin — Post List Badges & Feature Button</span>
+    <div class="phase-badges"><span class="badge b-admin">arclink admin</span></div>
+  </div>
+
+  <pre><span class="fn">published.component.html — add per post</span>
+@if (post.article_format === <span class="str">'weekly-roundup'</span>) {
+  &lt;span class=<span class="str">"badge-roundup"</span>&gt;Weekly Roundup&lt;/span&gt;
+  &lt;button (click)=<span class="str">"setFeatured(post.id)"</span>
+          [class.active]=<span class="str">"post.featured"</span>&gt;
+    {{ post.featured ? <span class="str">'★ Homepage'</span> : <span class="str">'☆ Set as homepage'</span> }}
+  &lt;/button&gt;
+} @else if (post.article_format === <span class="str">'dialogue'</span>) {
+  &lt;span class=<span class="str">"badge-dialogue"</span>&gt;Dialogue&lt;/span&gt;
+}
+
+<span class="cmt">// In BlogApiService — add featurePost()</span>
+<span class="fn-c">featurePost</span>(postId: <span class="type">string</span>) {
+  <span class="kw">return this</span>.http.<span class="fn-c">post</span>(
+    `${<span class="kw">this</span>.base}/posts/${<span class="kw">this</span>.tenantId}/${postId}/feature`, {},
+    { headers: <span class="kw">this</span>.headers }
+  );
+}</pre>
+</div>
+
+<div class="phase" id="admin-preview">
+  <div class="phase-header">
+    <span class="phase-num">13</span>
+    <span class="phase-title">Admin — Post Preview Renderer</span>
+    <div class="phase-badges"><span class="badge b-admin">arclink admin</span></div>
+  </div>
+
+  <pre><span class="fn">post-preview.component.html</span>
+@if (post.article_format === <span class="str">'weekly-roundup'</span> && post.fixture_dialogues?.length) {
+  @for (fd of post.fixture_dialogues; track fd.matchLabel) {
+    &lt;div class=<span class="str">"fixture-section"</span>&gt;
+      &lt;div class=<span class="str">"fixture-label"</span>&gt;{{ fd.matchLabel }}&lt;/div&gt;
+      @for (block of fd.blocks; track block.order) {
+        &lt;div class=<span class="str">"dialogue-block"</span> [class]=<span class="str">"block.persona"</span>&gt;
+          &lt;strong&gt;{{ block.persona === <span class="str">'kwagga'</span> ? <span class="str">'Kwagga'</span> : <span class="str">'Marcus'</span> }}&lt;/strong&gt;
+          &lt;p&gt;{{ block.content | slice:0:200 }}...&lt;/p&gt;
+        &lt;/div&gt;
+      }
+    &lt;/div&gt;
+  }
+} @else {
+  &lt;div [innerHTML]=<span class="str">"post.content | markdown"</span>&gt;&lt;/div&gt;
+}</pre>
+</div>
+
+<div class="phase" id="admin-editor">
+  <div class="phase-header">
+    <span class="phase-num">14</span>
+    <span class="phase-title">Admin — Block Editor</span>
+    <div class="phase-badges"><span class="badge b-admin">arclink admin</span></div>
+  </div>
+
+  <p>For weekly roundup posts, show individual block textareas instead of one raw content editor. Saving reconstructs the delimited content from edited blocks.</p>
+
+  <pre><span class="fn">post-editor.component — key logic</span>
+@if (post.article_format === <span class="str">'weekly-roundup'</span>) {
+  @for (fd of editableFixtures; track fd.matchLabel) {
+    &lt;div class=<span class="str">"fixture-editor"</span>&gt;
+      &lt;h4&gt;{{ fd.matchLabel }}&lt;/h4&gt;
+      @for (block of fd.blocks; track block.order) {
+        &lt;label&gt;{{ block.persona === <span class="str">'kwagga'</span> ? <span class="str">'Kwagga'</span> : <span class="str">'Marcus'</span> }}&lt;/label&gt;
+        &lt;textarea [(ngModel)]=<span class="str">"block.content"</span> (change)=<span class="str">"reconstructContent()"</span>&gt;&lt;/textarea&gt;
+      }
+    &lt;/div&gt;
+  }
+}
+
+<span class="fn-c">reconstructContent</span>() {
+  <span class="kw">this</span>.post.content = <span class="kw">this</span>.editableFixtures.<span class="fn-c">map</span>(fd =>
+    `[FIXTURE: ${fd.matchLabel}]\n` +
+    fd.blocks.<span class="fn-c">map</span>(b =>
+      `[${b.persona.<span class="fn-c">toUpperCase</span>()}]\n${b.content}\n[/${b.persona.<span class="fn-c">toUpperCase</span>()}]`
+    ).<span class="fn-c">join</span>(<span class="str">'\n\n'</span>) +
+    <span class="str">'\n[/FIXTURE]'</span>
+  ).<span class="fn-c">join</span>(<span class="str">'\n\n'</span>);
+}</pre>
+</div>
+
+<!-- ===== ANGULAR FRONTEND ===== -->
+<div class="phase" id="fe-models">
+  <div class="phase-header">
+    <span class="phase-num">15</span>
+    <span class="phase-title">Angular — Models Update</span>
+    <div class="phase-badges"><span class="badge b-fe">sarugbybets</span><span class="badge b-fe">libs/models</span></div>
+  </div>
+
+  <pre><span class="fn">libs/models/src/lib/article.model.ts</span>
+<span class="kw">export type</span> <span class="type">ArticleFormat</span> = <span class="str">'standard'</span> | <span class="str">'dialogue'</span> | <span class="str">'weekly-roundup'</span>;
+<span class="kw">export type</span> <span class="type">PersonaKey</span> = <span class="str">'kwagga'</span> | <span class="str">'marcus'</span>;
+
+<span class="kw">export interface</span> <span class="type">DialogueBlock</span> {
+  persona: <span class="type">PersonaKey</span>;
+  content: <span class="type">string</span>;
+  order: <span class="type">number</span>;
+}
+<span class="kw">export interface</span> <span class="type">FixtureDialogue</span> {
+  matchLabel: <span class="type">string</span>;
+  blocks: <span class="type">DialogueBlock</span>[];
+}
+<span class="kw">export interface</span> <span class="type">FixtureEntry</span> {
+  homeTeam: <span class="type">string</span>; awayTeam: <span class="type">string</span>;
+  competition: <span class="type">string</span>; venue: <span class="type">string</span>;
+  kickoff: <span class="type">Date</span>; matchLabel: <span class="type">string</span>;
+}
+
+<span class="cmt">// Add to Article interface:</span>
+articleFormat: <span class="type">ArticleFormat</span>;
+dialogueBlocks: <span class="type">DialogueBlock</span>[];
+fixtureDialogues: <span class="type">FixtureDialogue</span>[];
+fixtureList: <span class="type">FixtureEntry</span>[];
+featured: <span class="type">boolean</span>;</pre>
+</div>
+
+<div class="phase" id="fe-service">
+  <div class="phase-header">
+    <span class="phase-num">16</span>
+    <span class="phase-title">Angular — ArclinkBlogService Updates</span>
+    <div class="phase-badges"><span class="badge b-fe">sarugbybets</span><span class="badge b-fe">data-access/arclink</span></div>
+  </div>
+
+  <pre><span class="fn">libs/data-access/arclink/src/lib/arclink-blog.service.ts — additions</span>
+<span class="cmt">// New method for homepage</span>
+<span class="fn-c">getFeaturedPost</span>() {
+  <span class="kw">const</span> key = <span class="fn-c">makeStateKey</span>&lt;<span class="type">Article</span>&gt;(`featured_${<span class="kw">this</span>.config.arclinkBlogTenantId}`);
+  <span class="kw">const</span> cached = <span class="kw">this</span>.ts.<span class="fn-c">get</span>(key, <span class="kw">null</span>);
+  <span class="kw">if</span> (cached) <span class="kw">return</span> <span class="fn-c">of</span>(cached);
+  <span class="kw">return this</span>.http
+    .get&lt;{ post: <span class="kw">any</span> }&gt;(`${<span class="dec">BASE</span>}/posts/${<span class="kw">this</span>.config.arclinkBlogTenantId}/featured`,
+      { headers: <span class="kw">this</span>.headers })
+    .pipe(map(r => <span class="kw">this</span>.<span class="fn-c">mapToArticle</span>(r.post)), tap(d => <span class="kw">this</span>.ts.<span class="fn-c">set</span>(key, d)));
+}
+
+<span class="cmt">// Update mapToArticle</span>
+<span class="kw">private</span> <span class="fn-c">mapToArticle</span>(p: <span class="kw">any</span>): <span class="type">Article</span> {
+  <span class="kw">return</span> {
+    <span class="cmt">// ...existing fields...</span>
+    articleFormat: p.article_format ?? <span class="str">'standard'</span>,
+    dialogueBlocks: (p.dialogue_blocks ?? []).<span class="fn-c">map</span>((b: <span class="kw">any</span>) => ({
+      persona: b.persona <span class="kw">as</span> <span class="type">PersonaKey</span>, content: b.content, order: b.order
+    })),
+    fixtureDialogues: (p.fixture_dialogues ?? []).<span class="fn-c">map</span>((fd: <span class="kw">any</span>) => ({
+      matchLabel: fd.matchLabel,
+      blocks: fd.blocks.<span class="fn-c">map</span>((b: <span class="kw">any</span>) => ({
+        persona: b.persona <span class="kw">as</span> <span class="type">PersonaKey</span>, content: b.content, order: b.order
+      }))
+    })),
+    fixtureList: (p.fixture_list ?? []).<span class="fn-c">map</span>((f: <span class="kw">any</span>) => ({
+      ...f, kickoff: <span class="kw">new</span> Date(f.kickoff)
+    })),
+    featured: p.featured ?? <span class="kw">false</span>,
+  };
+}</pre>
+</div>
+
+<div class="phase" id="fe-block">
+  <div class="phase-header">
+    <span class="phase-num">17</span>
+    <span class="phase-title">Angular — PersonaDialogueBlockComponent</span>
+    <div class="phase-badges"><span class="badge b-new">new component</span><span class="badge b-fe">ui-content lib</span></div>
+  </div>
+
+  <pre><span class="fn">generate: npx nx g @nx/angular:component persona-dialogue-block --project=ui-content --standalone</span>
+
+<span class="cmt">// persona-dialogue-block.component.ts</span>
+<span class="kw">const</span> <span class="dec">CONFIG</span> = {
+  kwagga: { name: <span class="str">'Kwagga van der Berg'</span>, descriptor: <span class="str">'SA rugby correspondent'</span>,
+            initials: <span class="str">'KV'</span>, avatarCls: <span class="str">'bg-blue-100 text-blue-800'</span>, borderCls: <span class="str">'border-l-blue-600'</span> },
+  marcus: { name: <span class="str">'Marcus Webb'</span>, descriptor: <span class="str">'Rugby tactics &amp; markets'</span>,
+            initials: <span class="str">'MW'</span>, avatarCls: <span class="str">'bg-orange-100 text-orange-800'</span>, borderCls: <span class="str">'border-l-orange-500'</span> },
+} <span class="kw">as const</span>;
+
+block = <span class="fn-c">input</span>.required&lt;<span class="type">DialogueBlock</span>&gt;();
+<span class="kw">get</span> <span class="fn-c">cfg</span>() { <span class="kw">return</span> <span class="dec">CONFIG</span>[<span class="kw">this</span>.<span class="fn-c">block</span>().persona]; }</pre>
+
+  <pre><span class="fn">persona-dialogue-block.component.html</span>
+&lt;div class=<span class="str">"border-l-4 rounded-r-lg bg-white shadow-sm mb-6"</span> [class]=<span class="str">"cfg.borderCls"</span>&gt;
+  &lt;div class=<span class="str">"flex items-center gap-3 px-5 py-4 border-b border-gray-100"</span>&gt;
+    &lt;div class=<span class="str">"w-10 h-10 rounded-full flex items-center justify-center text-sm font-semibold"</span>
+         [class]=<span class="str">"cfg.avatarCls"</span>&gt;{{ cfg.initials }}&lt;/div&gt;
+    &lt;div&gt;
+      &lt;p class=<span class="str">"text-sm font-semibold text-gray-900"</span>&gt;{{ cfg.name }}&lt;/p&gt;
+      &lt;p class=<span class="str">"text-xs text-gray-500"</span>&gt;{{ cfg.descriptor }}&lt;/p&gt;
+    &lt;/div&gt;
+  &lt;/div&gt;
+  &lt;div class=<span class="str">"px-5 py-4 prose prose-sm max-w-none text-gray-700"</span>
+       [innerHTML]=<span class="str">"block().content | markdown"</span>&gt;&lt;/div&gt;
+&lt;/div&gt;</pre>
+</div>
+
+<div class="phase" id="fe-fixture-section">
+  <div class="phase-header">
+    <span class="phase-num">18</span>
+    <span class="phase-title">Angular — FixtureDialogueSectionComponent</span>
+    <div class="phase-badges"><span class="badge b-new">new component</span><span class="badge b-fe">ui-content lib</span></div>
+  </div>
+
+  <p>Renders one fixture's header divider and its two dialogue blocks. Used in both homepage and article detail — same component, no duplication.</p>
+
+  <pre><span class="fn">generate: npx nx g @nx/angular:component fixture-dialogue-section --project=ui-content --standalone</span>
+
+<span class="cmt">// fixture-dialogue-section.component.html</span>
+&lt;div class=<span class="str">"mb-10"</span>&gt;
+  @if (showDivider()) {
+    &lt;div class=<span class="str">"flex items-center gap-3 mb-6"</span>&gt;
+      &lt;div class=<span class="str">"h-px flex-1 bg-gray-200"</span>&gt;&lt;/div&gt;
+      &lt;span class=<span class="str">"text-xs font-mono text-gray-500 whitespace-nowrap px-2"</span>&gt;
+        {{ fixture().matchLabel }}
+      &lt;/span&gt;
+      &lt;div class=<span class="str">"h-px flex-1 bg-gray-200"</span>&gt;&lt;/div&gt;
+    &lt;/div&gt;
+  }
+  @for (block of fixture().blocks; track block.order) {
+    &lt;lib-persona-dialogue-block [block]=<span class="str">"block"</span> /&gt;
+  }
+&lt;/div&gt;</pre>
+</div>
+
+<div class="phase" id="fe-roundup">
+  <div class="phase-header">
+    <span class="phase-num">19</span>
+    <span class="phase-title">Angular — WeeklyRoundupComponent (Homepage Section)</span>
+    <div class="phase-badges"><span class="badge b-new">new component</span><span class="badge b-fe">ui-content lib</span></div>
+  </div>
+
+  <pre><span class="fn">generate: npx nx g @nx/angular:component weekly-roundup --project=ui-content --standalone</span>
+
+<span class="cmt">// weekly-roundup.component.html — simplified</span>
+&lt;section class=<span class="str">"py-12 px-4 max-w-3xl mx-auto"</span>&gt;
+
+  @if (loading()) {
+    &lt;div class=<span class="str">"animate-pulse space-y-4"</span>&gt;
+      &lt;div class=<span class="str">"h-6 bg-gray-200 rounded w-64"</span>&gt;&lt;/div&gt;
+      &lt;div class=<span class="str">"h-4 bg-gray-100 rounded w-full"</span>&gt;&lt;/div&gt;
+      &lt;div class=<span class="str">"h-32 bg-gray-100 rounded"</span>&gt;&lt;/div&gt;
+    &lt;/div&gt;
+  }
+
+  @else if (!post()) {
+    &lt;div class=<span class="str">"text-center py-12 text-gray-400"</span>&gt;
+      &lt;p class=<span class="str">"text-sm"</span>&gt;This weekend's analysis coming soon.&lt;/p&gt;
+      &lt;p class=<span class="str">"text-xs mt-1"</span>&gt;Check back Friday morning.&lt;/p&gt;
+    &lt;/div&gt;
+  }
+
+  @else if (post(); as a) {
+    &lt;div class=<span class="str">"mb-8"</span>&gt;
+      &lt;div class=<span class="str">"flex justify-between mb-1"</span>&gt;
+        &lt;span class=<span class="str">"text-xs font-mono uppercase tracking-widest text-gray-400"</span>&gt;
+          This weekend's fixtures
+        &lt;/span&gt;
+        &lt;span class=<span class="str">"text-xs text-gray-400"</span>&gt;{{ a.publishedAt | date:'d MMMM yyyy' }}&lt;/span&gt;
+      &lt;/div&gt;
+      &lt;h2 class=<span class="str">"text-2xl font-bold text-gray-900"</span>&gt;{{ a.title }}&lt;/h2&gt;
+      &lt;p class=<span class="str">"text-sm text-gray-500 mt-1"</span>&gt;{{ a.excerpt }}&lt;/p&gt;
+      &lt;div class=<span class="str">"flex items-center gap-2 mt-3"</span>&gt;
+        &lt;span class=<span class="str">"w-6 h-6 rounded-full bg-blue-100 text-blue-800 text-xs font-semibold flex items-center justify-center"</span>&gt;KV&lt;/span&gt;
+        &lt;span class=<span class="str">"w-6 h-6 rounded-full bg-orange-100 text-orange-800 text-xs font-semibold flex items-center justify-center"</span>&gt;MW&lt;/span&gt;
+        &lt;span class=<span class="str">"text-xs text-gray-400"</span>&gt;Kwagga van der Berg &amp; Marcus Webb&lt;/span&gt;
+      &lt;/div&gt;
+    &lt;/div&gt;
+
+    @for (fixture of a.fixtureDialogues; track fixture.matchLabel) {
+      &lt;lib-fixture-dialogue-section [fixture]=<span class="str">"fixture"</span> [showDivider]=<span class="str">"true"</span> /&gt;
+    }
+
+    &lt;div class=<span class="str">"mt-6 pt-6 border-t border-gray-100 text-center"</span>&gt;
+      &lt;a [routerLink]=<span class="str">"['/analysis', a.slug]"</span>
+         class=<span class="str">"text-sm text-blue-600 hover:text-blue-800 font-medium"</span>&gt;
+        View full analysis →
+      &lt;/a&gt;
+    &lt;/div&gt;
+  }
+
+&lt;/section&gt;</pre>
+</div>
+
+<div class="phase" id="fe-home">
+  <div class="phase-header">
+    <span class="phase-num">20</span>
+    <span class="phase-title">Angular — HomeComponent Update</span>
+    <div class="phase-badges"><span class="badge b-fe">sarugbybets</span></div>
+  </div>
+
+  <p>Replace the fixtures section and "Latest analysis" card grid with <code>WeeklyRoundupComponent</code>. The homepage becomes a single editorial experience.</p>
+
+  <pre><span class="fn">apps/rugby/src/app/pages/home/home.component.ts</span>
+<span class="kw">import</span> { WeeklyRoundupComponent } <span class="kw">from</span> <span class="str">'@odds-nx/ui-content'</span>;
+
+<span class="prop">@Component</span>({
+  selector: <span class="str">'app-home'</span>,
+  standalone: <span class="kw">true</span>,
+  imports: [HeroComponent, WeeklyRoundupComponent, BookmakersStripComponent],
+  template: `
+    &lt;app-hero /&gt;
+    &lt;lib-weekly-roundup /&gt;
+    &lt;app-bookmakers-strip /&gt;
+  `
+})
+<span class="kw">export class</span> <span class="type">HomeComponent</span> {}</pre>
+
+  <div class="callout tip">
+    <strong>Remove from homepage:</strong> the "This weekend's fixtures" section with match cards, and the "Latest analysis" card grid. Both of these are replaced by <code>WeeklyRoundupComponent</code>. The card grid moves to <code>/analysis</code> as an archive.
+  </div>
+</div>
+
+<div class="phase" id="fe-detail">
+  <div class="phase-header">
+    <span class="phase-num">21</span>
+    <span class="phase-title">Angular — ArticleDetailComponent Update</span>
+    <div class="phase-badges"><span class="badge b-fe">sarugbybets</span></div>
+  </div>
+
+  <pre><span class="fn">article-detail.component.html — content section (after header/image)</span>
+
+<span class="cmt">&lt;!-- WEEKLY ROUNDUP --&gt;</span>
+@if (a.articleFormat === <span class="str">'weekly-roundup'</span> && a.fixtureDialogues.length) {
+  &lt;div class=<span class="str">"max-w-3xl mx-auto px-4 pb-12"</span>&gt;
+    @for (fixture of a.fixtureDialogues; track fixture.matchLabel) {
+      &lt;lib-fixture-dialogue-section [fixture]=<span class="str">"fixture"</span> [showDivider]=<span class="str">"true"</span> /&gt;
+    }
+  &lt;/div&gt;
+}
+
+<span class="cmt">&lt;!-- SINGLE DIALOGUE --&gt;</span>
+@else if (a.articleFormat === <span class="str">'dialogue'</span> && a.dialogueBlocks.length) {
+  &lt;div class=<span class="str">"max-w-2xl mx-auto px-4 pb-12"</span>&gt;
+    @for (block of a.dialogueBlocks; track block.order) {
+      &lt;lib-persona-dialogue-block [block]=<span class="str">"block"</span> /&gt;
+    }
+  &lt;/div&gt;
+}
+
+<span class="cmt">&lt;!-- STANDARD --&gt;</span>
+@else {
+  &lt;div class=<span class="str">"max-w-2xl mx-auto px-4 pb-12 prose prose-gray max-w-none"</span>
+       [innerHTML]=<span class="str">"a.content | markdown"</span>&gt;
+  &lt;/div&gt;
+}</pre>
+</div>
+
+<div class="phase" id="fe-markdown">
+  <div class="phase-header">
+    <span class="phase-num">22</span>
+    <span class="phase-title">Angular — MarkdownPipe</span>
+    <div class="phase-badges"><span class="badge b-fe">ui-content lib</span></div>
+  </div>
+
+  <pre><span class="fn">libs/ui/content/src/lib/pipes/markdown.pipe.ts</span>
+<span class="kw">import</span> { Pipe, PipeTransform } <span class="kw">from</span> <span class="str">'@angular/core'</span>;
+<span class="kw">import</span> { DomSanitizer, <span class="type">SafeHtml</span> } <span class="kw">from</span> <span class="str">'@angular/platform-browser'</span>;
+<span class="kw">import</span> { marked } <span class="kw">from</span> <span class="str">'marked'</span>;
+
+<span class="prop">@Pipe</span>({ name: <span class="str">'markdown'</span>, standalone: <span class="kw">true</span> })
+<span class="kw">export class</span> <span class="type">MarkdownPipe</span> <span class="kw">implements</span> <span class="type">PipeTransform</span> {
+  <span class="kw">constructor</span>(<span class="kw">private</span> sanitizer: <span class="type">DomSanitizer</span>) {}
+  <span class="fn-c">transform</span>(value: <span class="type">string</span> | <span class="kw">undefined</span>): <span class="type">SafeHtml</span> {
+    <span class="kw">if</span> (!value) <span class="kw">return</span> <span class="str">''</span>;
+    <span class="kw">return this</span>.sanitizer.<span class="fn-c">bypassSecurityTrustHtml</span>(marked(value) <span class="kw">as</span> <span class="type">string</span>);
+  }
+}</pre>
+
+  <pre class="cmd">npm install marked && npm install -D @types/marked</pre>
+</div>
+
+<!-- ===== BUILD ORDER ===== -->
+<div class="phase" id="build-order">
+  <div class="phase-header">
+    <span class="phase-num">→</span>
+    <span class="phase-title">Full Build Order</span>
+  </div>
+
+  <p>Complete sequence. Do not start the Angular section until Step 16 is confirmed working.</p>
+
+  <ul class="order-list">
+    <li>Sign up for API-Sports, get key, confirm league IDs via GET /leagues <span class="sys b-auto badge">auto</span></li>
+    <li>Add <code>API_SPORTS_KEY</code> to Railway env vars for blog service <span class="sys b-api badge">api</span></li>
+    <li>Add <code>sport_key</code>, <code>sport_label</code> to BlogTenant model + seed script <span class="sys b-api badge">api</span></li>
+    <li>Add <code>article_format</code>, <code>featured</code>, <code>fixture_list</code>, <code>fixture_dialogues</code>, <code>dialogue_blocks</code> to Post model <span class="sys b-api badge">api</span></li>
+    <li>Add <code>persona</code>, <code>fixtures</code>, <code>is_weekly_roundup</code> to TitleQueue model <span class="sys b-api badge">api</span></li>
+    <li>Create <code>api-sports.ts</code> fixture fetcher service <span class="sys b-auto badge">auto</span></li>
+    <li>Create <code>fixture-selector.ts</code> scoring service <span class="sys b-auto badge">auto</span></li>
+    <li>Create <code>dialogue-parser.ts</code> utility <span class="sys b-api badge">api</span></li>
+    <li>Update <code>claude.ts</code> — extend <code>generatePost()</code> with fixtures param, <code>buildRoundupMessage()</code>, <code>buildCombinedSystem()</code> <span class="sys b-api badge">api</span></li>
+    <li>Update <code>generate.ts</code> route — parse and store fixture_dialogues on save <span class="sys b-api badge">api</span></li>
+    <li>Add GET <code>/posts/:tenantId/featured</code> endpoint <span class="sys b-api badge">api</span></li>
+    <li>Add POST <code>/posts/:tenantId/:postId/feature</code> endpoint <span class="sys b-api badge">api</span></li>
+    <li>Add POST <code>/posts/:tenantId/generate-roundup</code> manual trigger endpoint <span class="sys b-api badge">api</span></li>
+    <li>Create <code>scheduler-weekly-roundup.ts</code> with Tuesday 04:00 UTC cron <span class="sys b-auto badge">auto</span></li>
+    <li>Register new scheduler in <code>index.ts</code> <span class="sys b-auto badge">auto</span></li>
+    <li>Test: call <code>runWeeklyRoundup(tenant)</code> manually — verify fixture_dialogues in saved draft <span class="sys b-api badge">api</span></li>
+    <li>Test: publish draft, call /feature, call /featured — confirm response <span class="sys b-api badge">api</span></li>
+    <li>Admin: add format badges + "Set as homepage" button to post list <span class="sys b-admin badge">admin</span></li>
+    <li>Admin: add ⚡ "Generate weekly roundup now" button + spinner + result alert <span class="sys b-admin badge">admin</span></li>
+    <li>Admin: add <code>generateRoundupNow()</code> to BlogApiService <span class="sys b-admin badge">admin</span></li>
+    <li>Admin: update post preview — weekly roundup renderer <span class="sys b-admin badge">admin</span></li>
+    <li>Admin: update post editor — block editing for weekly-roundup posts <span class="sys b-admin badge">admin</span></li>
+    <li>Admin: update BlogApiService — add <code>featurePost()</code> <span class="sys b-admin badge">admin</span></li>
+    <li>Angular: update Article model — all new fields and types <span class="sys b-fe badge">frontend</span></li>
+    <li>Angular: update ArclinkBlogService — <code>getFeaturedPost()</code>, update <code>mapToArticle()</code> <span class="sys b-fe badge">frontend</span></li>
+    <li>Angular: install <code>marked</code>, create <code>MarkdownPipe</code> <span class="sys b-fe badge">frontend</span></li>
+    <li>Angular: generate <code>PersonaDialogueBlockComponent</code> <span class="sys b-fe badge">frontend</span></li>
+    <li>Angular: generate <code>FixtureDialogueSectionComponent</code> <span class="sys b-fe badge">frontend</span></li>
+    <li>Angular: generate <code>WeeklyRoundupComponent</code> <span class="sys b-fe badge">frontend</span></li>
+    <li>Angular: update <code>HomeComponent</code> — replace sections with WeeklyRoundup <span class="sys b-fe badge">frontend</span></li>
+    <li>Angular: update <code>ArticleDetailComponent</code> — three format cases <span class="sys b-fe badge">frontend</span></li>
+    <li>Angular: export all new components from <code>ui-content/src/index.ts</code> <span class="sys b-fe badge">frontend</span></li>
+    <li>Test: homepage shows skeleton → dialogue renders after load <span class="sys b-fe badge">frontend</span></li>
+    <li>Test: article detail shows weekly roundup format <span class="sys b-fe badge">frontend</span></li>
+    <li>Test: standard format articles unaffected — no regression <span class="sys b-fe badge">frontend</span></li>
+  </ul>
+</div>
+
+<!-- ===== CHECKLIST ===== -->
+<div class="phase" id="checklist">
+  <div class="phase-header">
+    <span class="phase-num">→</span>
+    <span class="phase-title">Test Checklist</span>
+  </div>
+
+  <p style="margin-bottom:.75rem;color:var(--muted);font-size:.875rem">arclink API</p>
+  <div class="check-grid">
+    <div class="check-item">Fixture fetch returns results for rugby_union</div>
+    <div class="check-item">Scoring correctly ranks SA teams highest</div>
+    <div class="check-item">runWeeklyRoundup() saves a draft post</div>
+    <div class="check-item">draft has article_format: weekly-roundup</div>
+    <div class="check-item">fixture_dialogues has one entry per fixture</div>
+    <div class="check-item">Each entry has 2 blocks (kwagga + marcus)</div>
+    <div class="check-item">GET /featured returns 404 when none set</div>
+    <div class="check-item">POST /feature pins post, unpins previous</div>
+    <div class="check-item">GET /featured returns pinned post</div>
+    <div class="check-item">Standard posts unaffected</div>
+  </div>
+
+  <p style="margin:.75rem 0 .75rem;color:var(--muted);font-size:.875rem">sarugbybets Homepage</p>
+  <div class="check-grid">
+    <div class="check-item">Skeleton shows while loading</div>
+    <div class="check-item">Empty state when no featured post</div>
+    <div class="check-item">Fixture sections render in order</div>
+    <div class="check-item">Fixture dividers show match labels</div>
+    <div class="check-item">Kwagga: blue border, KV initials</div>
+    <div class="check-item">Marcus: orange border, MW initials</div>
+    <div class="check-item">Markdown renders correctly in blocks</div>
+    <div class="check-item">View full analysis link works</div>
+    <div class="check-item">Mobile readable at 375px</div>
+    <div class="check-item">No card grid on homepage</div>
+  </div>
+
+  <p style="margin:.75rem 0 .75rem;color:var(--muted);font-size:.875rem">Article Detail</p>
+  <div class="check-grid">
+    <div class="check-item">Weekly roundup renders fixture sections</div>
+    <div class="check-item">Single dialogue renders flat blocks</div>
+    <div class="check-item">Standard renders prose</div>
+    <div class="check-item">All slugs accessible via /analysis/:slug</div>
+  </div>
+</div>
+
+<!-- ===== CONTENT FORMAT ===== -->
+<div class="phase" id="content-format">
+  <div class="phase-header">
+    <span class="phase-num">→</span>
+    <span class="phase-title">Required Content Format Reference</span>
+  </div>
+
+  <p>Claude must output this exact structure. If manually fixing a post, use this as the template.</p>
+
+  <pre>{ "seo_title": "URC Weekend Preview — 5 April",
+  "seo_description": "Kwagga and Marcus break down this weekend's URC fixtures",
+  "excerpt": "Bulls vs Sharks, Lions vs Stormers — set piece, structure, and where the value sits",
+  "categories": ["Fixture Previews"],
+  "tags": ["kwagga","marcus","urc","fixture-preview","weekly-roundup"] }
+
+[FIXTURE: Bulls vs Sharks · Loftus · Sat 17:00]
+[KWAGGA]
+Start where the game starts. Not with the backline...
+
+Bet at Hollywoodbets on the Bulls handicap — set-piece leverage justifies it.
+[/KWAGGA]
+[MARCUS]
+Kwagga's right about the scrum, which I don't always say...
+
+Bet at Betway on total points under — neither side scores freely here.
+[/MARCUS]
+[/FIXTURE]
+
+[FIXTURE: Lions vs Stormers · Ellis Park · Sat 19:30]
+[KWAGGA]
+...
+[/KWAGGA]
+[MARCUS]
+...
+[/MARCUS]
+[/FIXTURE]</pre>
+
+  <div class="callout danger">
+    <strong>Nothing outside the delimiters.</strong> No intro paragraph, no section headers, no conclusion. JSON frontmatter comes before the first [FIXTURE:] tag. Everything else is inside the fixture blocks. The parser will silently drop anything outside.
+  </div>
+</div>
+
+<!-- ===== ENV VARS ===== -->
+<div class="phase" id="env-vars">
+  <div class="phase-header">
+    <span class="phase-num">→</span>
+    <span class="phase-title">Environment Variables</span>
+  </div>
+
+  <table>
+    <thead><tr><th>Variable</th><th>Where</th><th>Value</th></tr></thead>
+    <tbody>
+      <tr><td><code>API_SPORTS_KEY</code></td><td>Railway — blog service</td><td>From api-sports.io account</td></tr>
+      <tr><td><code>ANTHROPIC_API_KEY</code></td><td>Railway — blog service</td><td>Already set</td></tr>
+      <tr><td><code>MONGODB_URI</code></td><td>Railway — blog service</td><td>Already set</td></tr>
+      <tr><td><code>ARCLINK_BLOG_TENANT_ID</code></td><td>Vercel — rugby project</td><td>From seed script output</td></tr>
+      <tr><td><code>ARCLINK_BLOG_API_KEY</code></td><td>Vercel — rugby project</td><td>From seed script output</td></tr>
+      <tr><td><code>ARCLINK_SITE_ID</code></td><td>Vercel — rugby project</td><td><code>betwise-rugby</code></td></tr>
+    </tbody>
+  </table>
+</div>
+
+</main>
+</div>
+
+</body>
+</html>
