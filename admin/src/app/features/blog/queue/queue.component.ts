@@ -36,6 +36,27 @@ import { TitleSuggestion, QueueItem, Post } from '../../../models/blog.model';
         }
       </button>
     </div>
+    <div class="bg-[#111] rounded-lg border border-[#1a1a1a] p-4 mb-3 flex items-center justify-between">
+      <div class="flex-1 min-w-0 mr-4">
+        <p class="text-sm font-medium text-white">Sync Personas</p>
+        <p class="text-xs text-[#555] mt-0.5">Apply latest persona prompts from code to all tenants in DB</p>
+        @if (syncPersonasResult()) {
+          <p class="text-xs text-green-400 mt-1">{{ syncPersonasResult() }}</p>
+        }
+        @if (syncPersonasError()) {
+          <p class="text-xs text-red-400 mt-1">{{ syncPersonasError() }}</p>
+        }
+      </div>
+      <button (click)="syncPersonas()"
+              [disabled]="syncingPersonas()"
+              class="px-4 py-2 text-sm rounded-md bg-violet-700 hover:bg-violet-600 text-white disabled:opacity-50 cursor-pointer transition-colors shrink-0 whitespace-nowrap">
+        @if (syncingPersonas()) {
+          <span class="inline-block w-3 h-3 border border-[#fff5] border-t-white rounded-full animate-spin mr-1"></span>Syncing...
+        } @else {
+          ↻ Sync personas
+        }
+      </button>
+    </div>
     <div class="bg-[#111] rounded-lg border border-[#1a1a1a] p-4 mb-6 flex items-center justify-between">
       <div class="flex-1 min-w-0 mr-4">
         <p class="text-sm font-medium text-white">Weekly Roundup</p>
@@ -177,6 +198,9 @@ export class QueueComponent implements OnInit {
   syncing = signal(false);
   syncResult = signal<string | null>(null);
   syncError = signal<string | null>(null);
+  syncingPersonas = signal(false);
+  syncPersonasResult = signal<string | null>(null);
+  syncPersonasError = signal<string | null>(null);
   generatingRoundup = signal(false);
   roundupResult = signal<Post | null>(null);
   roundupError = signal<string | null>(null);
@@ -253,6 +277,22 @@ export class QueueComponent implements OnInit {
       error: (err) => {
         this.syncing.set(false);
         this.syncError.set(err.error?.error ?? 'Sync failed — check Railway logs');
+      }
+    });
+  }
+
+  syncPersonas() {
+    this.syncingPersonas.set(true);
+    this.syncPersonasResult.set(null);
+    this.syncPersonasError.set(null);
+    this.api.syncPersonas().subscribe({
+      next: (res) => {
+        this.syncingPersonas.set(false);
+        this.syncPersonasResult.set(`Personas updated — ${res.updated}/${res.results.length} tenants`);
+      },
+      error: (err) => {
+        this.syncingPersonas.set(false);
+        this.syncPersonasError.set(err.error?.error ?? 'Sync failed — check Railway logs');
       }
     });
   }

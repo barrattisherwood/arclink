@@ -135,6 +135,12 @@ export class BlogApiService {
     );
   }
 
+  syncPersonas() {
+    return this.http.post<{ ok: boolean; updated: number; results: Array<{ tenantName: string; status: string }> }>(
+      `${this.base}/api/admin/sync-personas`, {}, { headers: this.headers }
+    );
+  }
+
   checkTenant(siteId: string) {
     return this.http.get<{ exists: boolean; tenantId?: string; roundupEnabled?: boolean; sportLabel?: string; personas?: Array<{ value: string; label: string }> }>(
       `${this.base}/tenant/${siteId}`

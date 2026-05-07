@@ -10,6 +10,7 @@ import feedRouter from './routes/feed';
 import tenantRouter from './routes/tenant';
 import calendarRouter from './routes/calendar';
 import suggestionsRouter from './routes/suggestions';
+import adminRouter from './routes/admin';
 import { startScheduler } from './scheduler';
 import './scheduler-weekly-roundup';
 import './scheduler-generation';
@@ -58,6 +59,7 @@ app.use('/suggest/:tenantId', suggestRouter);
 app.use('/tenant', tenantRouter);
 app.use('/calendar/:tenantId', calendarRouter);
 app.use('/suggestions/:tenantId', suggestionsRouter);
+app.use('/api/admin', adminRouter);
 
 async function start(): Promise<void> {
   const mongoUri = process.env.MONGODB_URI;

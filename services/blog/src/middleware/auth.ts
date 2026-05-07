@@ -81,6 +81,20 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   next();
 }
 
+export function requireAdminJwt(req: Request, res: Response, next: NextFunction): void {
+  const authHeader = req.headers.authorization;
+  if (!authHeader?.startsWith('Bearer ')) {
+    res.status(401).json({ error: 'Unauthorised' });
+    return;
+  }
+  const payload = verifyAdminJwt(authHeader.slice(7));
+  if (!payload || payload.role !== 'super-admin') {
+    res.status(403).json({ error: 'Forbidden' });
+    return;
+  }
+  next();
+}
+
 export async function resolveTenant(req: Request, res: Response, next: NextFunction): Promise<void> {
   const { tenantId } = req.params;
   const tenant = await BlogTenant.findOne({ id: tenantId, active: true });
