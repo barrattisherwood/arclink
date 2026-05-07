@@ -22,6 +22,7 @@
     "mongoose": "^8.0.3",
     "multer": "^1.x",
     "node-cron": "^3.0.3",
+    "resend": "^4.8.0",
     "slugify": "^1.x",
     "uuid": "^9.x"
   },
