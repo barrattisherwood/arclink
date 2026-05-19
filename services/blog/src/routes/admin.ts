@@ -94,7 +94,7 @@ router.post('/migrate-findtherapy', requireAdminJwt, async (_req: Request, res: 
   const allPosts: any[] = [];
 
   while (true) {
-    const response = await axios.get(SOURCE_URL, { params: { page, limit: 50 }, timeout: 15000 });
+    const response = await axios.get<{ posts: any[]; pages: number }>(SOURCE_URL, { params: { page, limit: 50 }, timeout: 15000 });
     const { posts = [], pages = 1 } = response.data;
     allPosts.push(...posts);
     totalFetched += posts.length;
