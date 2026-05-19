@@ -25,6 +25,8 @@ const ALLOWED_ORIGINS = [
   'https://dashboard.arclink.dev',
   'https://machinum.io',
   'https://www.machinum.io',
+  'https://findtherapy.care',
+  'https://www.findtherapy.care',
   'http://localhost:4200',
   'http://localhost:3000',
 ];
