@@ -141,6 +141,18 @@ export class BlogApiService {
     );
   }
 
+  seedFindtherapy() {
+    return this.http.post<{ ok: boolean; created: boolean; tenantId: string; apiKey?: string }>(
+      `${this.base}/api/admin/seed-findtherapy`, {}, { headers: this.headers }
+    );
+  }
+
+  migrateFindtherapy() {
+    return this.http.post<{ ok: boolean; fetched: number; upserted: number; skipped: number }>(
+      `${this.base}/api/admin/migrate-findtherapy`, {}, { headers: this.headers }
+    );
+  }
+
   checkTenant(siteId: string) {
     return this.http.get<{ exists: boolean; tenantId?: string; roundupEnabled?: boolean; sportLabel?: string; personas?: Array<{ value: string; label: string }> }>(
       `${this.base}/tenant/${siteId}`

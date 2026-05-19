@@ -53,6 +53,9 @@ export interface IPost extends Document {
   fixture_dialogues: IFixtureDialogue[];
   fixture_list: IFixtureEntry[];
   featured: boolean;
+  views: number;
+  likes: number;
+  author_name: string | null;
   created_at: Date;
 }
 
@@ -120,6 +123,9 @@ const PostSchema = new Schema<IPost>({
     default: [],
   },
   featured: { type: Boolean, default: false },
+  views: { type: Number, default: 0 },
+  likes: { type: Number, default: 0 },
+  author_name: { type: String, default: null },
   created_at: { type: Date, required: true, default: Date.now },
 });
 

@@ -57,6 +57,48 @@ import { TitleSuggestion, QueueItem, Post } from '../../../models/blog.model';
         }
       </button>
     </div>
+    <div class="bg-[#111] rounded-lg border border-[#1a1a1a] p-4 mb-3 flex items-center justify-between">
+      <div class="flex-1 min-w-0 mr-4">
+        <p class="text-sm font-medium text-white">Seed FindTherapy tenant</p>
+        <p class="text-xs text-[#555] mt-0.5">Create the findtherapy-care BlogTenant in DB (idempotent — safe to re-run)</p>
+        @if (seedFindtherapyResult()) {
+          <p class="text-xs text-green-400 mt-1">{{ seedFindtherapyResult() }}</p>
+        }
+        @if (seedFindtherapyError()) {
+          <p class="text-xs text-red-400 mt-1">{{ seedFindtherapyError() }}</p>
+        }
+      </div>
+      <button (click)="seedFindtherapy()"
+              [disabled]="seedingFindtherapy()"
+              class="px-4 py-2 text-sm rounded-md bg-teal-700 hover:bg-teal-600 text-white disabled:opacity-50 cursor-pointer transition-colors shrink-0 whitespace-nowrap">
+        @if (seedingFindtherapy()) {
+          <span class="inline-block w-3 h-3 border border-[#fff5] border-t-white rounded-full animate-spin mr-1"></span>Seeding...
+        } @else {
+          ⊕ Seed tenant
+        }
+      </button>
+    </div>
+    <div class="bg-[#111] rounded-lg border border-[#1a1a1a] p-4 mb-3 flex items-center justify-between">
+      <div class="flex-1 min-w-0 mr-4">
+        <p class="text-sm font-medium text-white">Migrate FindTherapy posts</p>
+        <p class="text-xs text-[#555] mt-0.5">Import all published posts from api.findtherapy.care — upserts by slug, safe to re-run</p>
+        @if (migrateFindtherapyResult()) {
+          <p class="text-xs text-green-400 mt-1">{{ migrateFindtherapyResult() }}</p>
+        }
+        @if (migrateFindtherapyError()) {
+          <p class="text-xs text-red-400 mt-1">{{ migrateFindtherapyError() }}</p>
+        }
+      </div>
+      <button (click)="migrateFindtherapy()"
+              [disabled]="migratingFindtherapy()"
+              class="px-4 py-2 text-sm rounded-md bg-orange-700 hover:bg-orange-600 text-white disabled:opacity-50 cursor-pointer transition-colors shrink-0 whitespace-nowrap">
+        @if (migratingFindtherapy()) {
+          <span class="inline-block w-3 h-3 border border-[#fff5] border-t-white rounded-full animate-spin mr-1"></span>Migrating...
+        } @else {
+          ↓ Migrate posts
+        }
+      </button>
+    </div>
     <div class="bg-[#111] rounded-lg border border-[#1a1a1a] p-4 mb-6 flex items-center justify-between">
       <div class="flex-1 min-w-0 mr-4">
         <p class="text-sm font-medium text-white">Weekly Roundup</p>
@@ -201,6 +243,12 @@ export class QueueComponent implements OnInit {
   syncingPersonas = signal(false);
   syncPersonasResult = signal<string | null>(null);
   syncPersonasError = signal<string | null>(null);
+  seedingFindtherapy = signal(false);
+  seedFindtherapyResult = signal<string | null>(null);
+  seedFindtherapyError = signal<string | null>(null);
+  migratingFindtherapy = signal(false);
+  migrateFindtherapyResult = signal<string | null>(null);
+  migrateFindtherapyError = signal<string | null>(null);
   generatingRoundup = signal(false);
   roundupResult = signal<Post | null>(null);
   roundupError = signal<string | null>(null);
@@ -293,6 +341,43 @@ export class QueueComponent implements OnInit {
       error: (err) => {
         this.syncingPersonas.set(false);
         this.syncPersonasError.set(err.error?.error ?? 'Sync failed — check Railway logs');
+      }
+    });
+  }
+
+  seedFindtherapy() {
+    this.seedingFindtherapy.set(true);
+    this.seedFindtherapyResult.set(null);
+    this.seedFindtherapyError.set(null);
+    this.api.seedFindtherapy().subscribe({
+      next: (res) => {
+        this.seedingFindtherapy.set(false);
+        if (res.created) {
+          const keyNote = res.apiKey ? ` API key: ${res.apiKey}` : '';
+          this.seedFindtherapyResult.set(`Tenant created (${res.tenantId}).${keyNote}`);
+        } else {
+          this.seedFindtherapyResult.set(`Tenant already exists (${res.tenantId})`);
+        }
+      },
+      error: (err) => {
+        this.seedingFindtherapy.set(false);
+        this.seedFindtherapyError.set(err.error?.error ?? 'Seed failed — check Railway logs');
+      }
+    });
+  }
+
+  migrateFindtherapy() {
+    this.migratingFindtherapy.set(true);
+    this.migrateFindtherapyResult.set(null);
+    this.migrateFindtherapyError.set(null);
+    this.api.migrateFindtherapy().subscribe({
+      next: (res) => {
+        this.migratingFindtherapy.set(false);
+        this.migrateFindtherapyResult.set(`Migration complete — ${res.upserted} upserted, ${res.skipped} skipped (${res.fetched} fetched)`);
+      },
+      error: (err) => {
+        this.migratingFindtherapy.set(false);
+        this.migrateFindtherapyError.set(err.error?.error ?? 'Migration failed — check Railway logs');
       }
     });
   }
