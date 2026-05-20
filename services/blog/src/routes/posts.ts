@@ -248,6 +248,11 @@ router.post('/generate-roundup', requireAuth, async (req: Request, res: Response
     return;
   }
 
+  // Flush headers immediately so CORS headers reach the browser before the
+  // long generation work begins — prevents Railway proxy timeout from appearing as a CORS block.
+  res.setHeader('Content-Type', 'application/json');
+  res.flushHeaders();
+
   try {
     const { runWeeklyRoundup } = await import('../scheduler-weekly-roundup');
     const startedAt = new Date();
@@ -261,13 +266,13 @@ router.post('/generate-roundup', requireAuth, async (req: Request, res: Response
     }).sort({ created_at: -1 });
 
     if (!post) {
-      res.status(422).json({ ok: false, error: 'No upcoming fixtures found for the next 7 days — roundup not generated.' });
+      res.end(JSON.stringify({ ok: false, error: 'No upcoming fixtures found for the next 7 days — roundup not generated.' }));
       return;
     }
 
-    res.json({ ok: true, post });
+    res.end(JSON.stringify({ ok: true, post }));
   } catch (err: any) {
-    res.status(500).json({ ok: false, error: err.message });
+    res.end(JSON.stringify({ ok: false, error: err.message }));
   }
 });
 

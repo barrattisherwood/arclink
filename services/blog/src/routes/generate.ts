@@ -35,6 +35,13 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
     return;
   }
 
+  // Flush headers immediately so CORS + 201 status reach the browser before the
+  // long Claude + Unsplash work begins. Without this, Railway's proxy timeout
+  // returns its own response (no CORS headers) and the browser misreads it as a CORS block.
+  res.status(201);
+  res.setHeader('Content-Type', 'application/json');
+  res.flushHeaders();
+
   const recentPosts = await Post.find({ tenant_id: tenantId, status: 'published' })
     .sort({ published_at: -1 })
     .limit(5)
@@ -118,7 +125,7 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
   // Remove from queue
   await TitleQueue.deleteOne({ id: next.id });
 
-  res.status(201).json({ post });
+  res.end(JSON.stringify({ post }));
 });
 
 export default router;
