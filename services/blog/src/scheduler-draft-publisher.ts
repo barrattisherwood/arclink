@@ -1,9 +1,7 @@
 import cron from 'node-cron';
 import { Post } from './models/Post';
 
-// Tuesday 08:00 UTC = 10:00 SAST — publish generated drafts created since the weekly roundup (04:00 UTC)
-cron.schedule('0 8 * * 2', async () => {
-  const now = new Date();
+export async function runDraftPublisher(now = new Date()): Promise<void> {
   const cutoff = new Date(now.getTime() - 2 * 60 * 60 * 1000);
 
   const drafts = await Post.find({
@@ -32,6 +30,9 @@ cron.schedule('0 8 * * 2', async () => {
 
   const roundups = drafts.filter(p => p.article_format === 'weekly-roundup').length;
   console.log(`[Draft Publisher] Published ${drafts.length} draft(s), featured ${roundups} weekly roundup(s)`);
-});
+}
+
+// Tuesday 08:00 UTC = 10:00 SAST
+cron.schedule('0 8 * * 2', () => runDraftPublisher());
 
 console.log('Draft publisher scheduler started');
