@@ -23,7 +23,7 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
 
   const entries = 'titles' in body
     ? body.titles
-    : [{ title: body.title, notes: body.notes, persona_tag: body.persona_tag, fixtures: body.fixtures }];
+    : [{ title: body.title, notes: body.notes, additional_context: (body as any).additional_context, persona_tag: body.persona_tag, force_single_persona: (body as any).force_single_persona, fixtures: body.fixtures, generate_at: (body as any).generate_at, publish_at: (body as any).publish_at }];
 
   if (!entries.length || entries.some(e => !e.title)) {
     res.status(400).json({ error: 'Each entry must have a title' });
@@ -35,13 +35,17 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
   let nextPriority = last ? last.priority + 1 : 0;
 
   const created = await TitleQueue.insertMany(
-    entries.map(e => ({
+    entries.map((e: any) => ({
       id: randomUUID(),
       tenant_id: tenantId,
       title: e.title,
       notes: e.notes ?? null,
+      additional_context: e.additional_context ?? null,
       persona_tag: e.persona_tag ?? null,
+      force_single_persona: e.force_single_persona ?? false,
       fixtures: e.fixtures ?? [],
+      generate_at: e.generate_at ? new Date(e.generate_at) : null,
+      publish_at: e.publish_at ? new Date(e.publish_at) : null,
       priority: nextPriority++,
     }))
   );

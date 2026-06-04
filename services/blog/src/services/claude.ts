@@ -4,7 +4,7 @@ import { IFixtureEntry } from '../models/Post';
 
 const client = new Anthropic();
 
-function buildStandardUserMessage(tenant: IBlogTenant, title: string, recentTitles: string[]): string {
+function buildStandardUserMessage(tenant: IBlogTenant, title: string, recentTitles: string[], additionalContext?: string | null): string {
   const tagInstruction = tenant.blog_predefined_tags.length > 0
     ? `Choose 3–5 tags from this list where relevant, but you may add new ones if needed: ${tenant.blog_predefined_tags.join(', ')}.`
     : 'Generate 3–5 relevant tags for this post.';
@@ -21,11 +21,46 @@ Tone: ${tenant.blog_tone}
 Target word count: approximately ${tenant.blog_word_count} words
 Post title: ${title}
 
-${recentTitles.length > 0 ? `Recent posts (avoid overlap):\n${recentTitles.map(t => `- ${t}`).join('\n')}` : ''}
+${additionalContext ? `Editorial brief:\n${additionalContext}\n` : ''}${recentTitles.length > 0 ? `Recent posts (avoid overlap):\n${recentTitles.map(t => `- ${t}`).join('\n')}` : ''}
 
 Write the full blog post in markdown. Do not include the title as an H1 — start directly with the introduction.
 
 After the post, output a JSON block (fenced with \`\`\`json) with this exact structure:
+{
+  "seo_title": "SERP-optimised title, max 60 characters",
+  "seo_description": "Meta description, max 155 characters",
+  "excerpt": "2–3 sentence preview, max 300 chars",
+  "categories": ["Category1"],
+  "tags": ["tag1", "tag2", "tag3"],
+  "unsplash_keyword": "2–3 word Unsplash search term",
+  "alt_text": "descriptive alt text for the featured image"
+}
+
+${tagInstruction}
+${categoryInstruction}`;
+}
+
+function buildSinglePersonaUserMessage(tenant: IBlogTenant, title: string, recentTitles: string[], additionalContext?: string | null): string {
+  const tagInstruction = tenant.blog_predefined_tags.length > 0
+    ? `Choose 3–5 tags from this list where relevant, but you may add new ones if needed: ${tenant.blog_predefined_tags.join(', ')}.`
+    : 'Generate 3–5 relevant tags for this post.';
+
+  const categoryInstruction = tenant.blog_predefined_categories?.length > 0
+    ? `Choose 1–2 categories from this list: ${tenant.blog_predefined_categories.join(', ')}.`
+    : 'Assign 1–2 broad topic categories for this post.';
+
+  return `Write a high-quality sports analysis article in your distinctive voice for the following brief.
+
+Site: ${tenant.name}
+Audience: ${tenant.blog_audience}
+Target word count: approximately ${tenant.blog_word_count} words
+Post title: ${title}
+
+${additionalContext ? `Editorial brief:\n${additionalContext}\n` : ''}${recentTitles.length > 0 ? `Recent posts (avoid overlap):\n${recentTitles.map(t => `- ${t}`).join('\n')}` : ''}
+
+Write the full article in markdown. Do not include the title as an H1 — start directly with the introduction. Write entirely in your established voice and analytical style.
+
+After the article, output a JSON block (fenced with \`\`\`json) with this exact structure:
 {
   "seo_title": "SERP-optimised title, max 60 characters",
   "seo_description": "Meta description, max 155 characters",
@@ -45,6 +80,7 @@ function buildDialogueUserMessage(
   title: string,
   personaTag: string,
   recentTitles: string[],
+  additionalContext?: string | null,
 ): string {
   const allPersonas = Array.from(tenant.blog_persona_prompts?.keys() ?? []);
   const otherPersona = allPersonas.find(p => p !== personaTag) ?? null;
@@ -62,7 +98,7 @@ function buildDialogueUserMessage(
 Site: ${tenant.name}
 Audience: ${tenant.blog_audience}
 
-${recentTitles.length > 0 ? `Recent articles (avoid overlap):\n${recentTitles.map(t => `- ${t}`).join('\n')}` : ''}
+${additionalContext ? `Editorial brief:\n${additionalContext}\n` : ''}${recentTitles.length > 0 ? `Recent articles (avoid overlap):\n${recentTitles.map(t => `- ${t}`).join('\n')}` : ''}
 
 FORMAT — CRITICAL:
 This is a dialogue-format article. Two analysts take turns. Use these exact delimiters:
@@ -201,15 +237,19 @@ export async function generatePost(
   recentTitles: string[],
   personaTag?: string | null,
   fixtures?: IFixtureEntry[],
+  additionalContext?: string | null,
+  singlePersona?: boolean,
 ): Promise<GeneratedPost> {
   const isWeeklyRoundup = !!fixtures?.length;
   const personaPrompt = !isWeeklyRoundup && personaTag && tenant.blog_persona_prompts?.get(personaTag);
 
   const prompt = isWeeklyRoundup
     ? buildWeeklyRoundupMessage(tenant, title, fixtures!)
-    : personaTag
-      ? buildDialogueUserMessage(tenant, title, personaTag, recentTitles)
-      : buildStandardUserMessage(tenant, title, recentTitles);
+    : singlePersona && personaTag
+      ? buildSinglePersonaUserMessage(tenant, title, recentTitles, additionalContext)
+      : personaTag
+        ? buildDialogueUserMessage(tenant, title, personaTag, recentTitles, additionalContext)
+        : buildStandardUserMessage(tenant, title, recentTitles, additionalContext);
 
   const systemPrompt = isWeeklyRoundup
     ? buildCombinedPersonaSystem(tenant)

@@ -47,7 +47,9 @@ async function processScheduledItem(itemId: string): Promise<void> {
       item.title,
       [],
       personaTag,
-      item.fixtures?.length ? item.fixtures : undefined
+      item.fixtures?.length ? item.fixtures : undefined,
+      item.additional_context ?? null,
+      item.force_single_persona ?? false,
     );
 
     const featured_image = tenant.blog_images_enabled

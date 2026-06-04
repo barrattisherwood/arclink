@@ -17,7 +17,9 @@ export interface ITitleQueue extends Document {
   title: string;
   priority: number;
   notes: string | null;
+  additional_context: string | null;
   persona_tag: string | null;
+  force_single_persona: boolean;
   fixtures: IFixtureEntry[];
   is_weekly_roundup: boolean;
   // Scheduling fields (Phase 1 calendar)
@@ -38,7 +40,9 @@ const TitleQueueSchema = new Schema<ITitleQueue>({
   title: { type: String, required: true },
   priority: { type: Number, required: true, default: 0 },
   notes: { type: String, default: null },
+  additional_context: { type: String, default: null },
   persona_tag: { type: String, default: null },
+  force_single_persona: { type: Boolean, default: false },
   is_weekly_roundup: { type: Boolean, default: false },
   content_type: { type: String, enum: ['article', 'weekly-roundup', 'match-preview', 'season-preview', 'evergreen', 'tournament-window', 'post-match', 'bookmaker-review'], default: 'article' },
   schedule_status: { type: String, enum: ['pending', 'generating', 'generated', 'failed'], default: 'pending' },

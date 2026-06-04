@@ -62,7 +62,7 @@ router.post('/', requireAuth, async (req: Request, res: Response): Promise<void>
     personaTag = personaTags[(lastIndex + 1) % personaTags.length];
   }
 
-  const generated = await generatePost(tenant, next.title, recentTitles, personaTag, next.fixtures?.length ? next.fixtures : undefined);
+  const generated = await generatePost(tenant, next.title, recentTitles, personaTag, next.fixtures?.length ? next.fixtures : undefined, next.additional_context ?? null, next.force_single_persona ?? false);
 
   const featured_image = tenant.blog_images_enabled
     ? await fetchUnsplashImage(generated.unsplash_keyword, generated.alt_text || next.title)
