@@ -13,6 +13,29 @@ import { TitleSuggestion, QueueItem, Post } from '../../../models/blog.model';
   template: `
     <h2 class="text-lg font-semibold text-white mb-4">Queue</h2>
 
+    <!-- Sync Personas (always visible) -->
+    <div class="bg-[#111] rounded-lg border border-[#1a1a1a] p-4 mb-3 flex items-center justify-between">
+      <div class="flex-1 min-w-0 mr-4">
+        <p class="text-sm font-medium text-white">Sync Personas</p>
+        <p class="text-xs text-[#555] mt-0.5">Apply latest persona prompts from code to all tenants in DB</p>
+        @if (syncPersonasResult()) {
+          <p class="text-xs text-green-400 mt-1">{{ syncPersonasResult() }}</p>
+        }
+        @if (syncPersonasError()) {
+          <p class="text-xs text-red-400 mt-1">{{ syncPersonasError() }}</p>
+        }
+      </div>
+      <button (click)="syncPersonas()"
+              [disabled]="syncingPersonas()"
+              class="px-4 py-2 text-sm rounded-md bg-violet-700 hover:bg-violet-600 text-white disabled:opacity-50 cursor-pointer transition-colors shrink-0 whitespace-nowrap">
+        @if (syncingPersonas()) {
+          <span class="inline-block w-3 h-3 border border-[#fff5] border-t-white rounded-full animate-spin mr-1"></span>Syncing...
+        } @else {
+          ↻ Sync personas
+        }
+      </button>
+    </div>
+
     <!-- Fixture Sync + Weekly Roundup -->
     @if (api.roundupEnabled) {
     <div class="bg-[#111] rounded-lg border border-[#1a1a1a] p-4 mb-3 flex items-center justify-between">
@@ -33,27 +56,6 @@ import { TitleSuggestion, QueueItem, Post } from '../../../models/blog.model';
           <span class="inline-block w-3 h-3 border border-[#fff5] border-t-white rounded-full animate-spin mr-1"></span>Syncing...
         } @else {
           ↻ Sync fixtures
-        }
-      </button>
-    </div>
-    <div class="bg-[#111] rounded-lg border border-[#1a1a1a] p-4 mb-3 flex items-center justify-between">
-      <div class="flex-1 min-w-0 mr-4">
-        <p class="text-sm font-medium text-white">Sync Personas</p>
-        <p class="text-xs text-[#555] mt-0.5">Apply latest persona prompts from code to all tenants in DB</p>
-        @if (syncPersonasResult()) {
-          <p class="text-xs text-green-400 mt-1">{{ syncPersonasResult() }}</p>
-        }
-        @if (syncPersonasError()) {
-          <p class="text-xs text-red-400 mt-1">{{ syncPersonasError() }}</p>
-        }
-      </div>
-      <button (click)="syncPersonas()"
-              [disabled]="syncingPersonas()"
-              class="px-4 py-2 text-sm rounded-md bg-violet-700 hover:bg-violet-600 text-white disabled:opacity-50 cursor-pointer transition-colors shrink-0 whitespace-nowrap">
-        @if (syncingPersonas()) {
-          <span class="inline-block w-3 h-3 border border-[#fff5] border-t-white rounded-full animate-spin mr-1"></span>Syncing...
-        } @else {
-          ↻ Sync personas
         }
       </button>
     </div>
