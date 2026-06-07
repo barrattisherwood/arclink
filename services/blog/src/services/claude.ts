@@ -49,7 +49,7 @@ function buildSinglePersonaUserMessage(tenant: IBlogTenant, title: string, recen
     ? `Choose 1–2 categories from this list: ${tenant.blog_predefined_categories.join(', ')}.`
     : 'Assign 1–2 broad topic categories for this post.';
 
-  return `Write a high-quality sports analysis article in your distinctive voice for the following brief.
+  return `Write a high-quality article in your distinctive voice for the following brief.
 
 Site: ${tenant.name}
 Audience: ${tenant.blog_audience}
@@ -242,10 +242,12 @@ export async function generatePost(
 ): Promise<GeneratedPost> {
   const isWeeklyRoundup = !!fixtures?.length;
   const personaPrompt = !isWeeklyRoundup && personaTag && tenant.blog_persona_prompts?.get(personaTag);
+  // Treat as single-persona if explicitly flagged, or if the tenant only has one persona
+  const effectivelySinglePersona = singlePersona || (tenant.blog_persona_prompts?.size === 1);
 
   const prompt = isWeeklyRoundup
     ? buildWeeklyRoundupMessage(tenant, title, fixtures!)
-    : singlePersona && personaTag
+    : effectivelySinglePersona && personaTag
       ? buildSinglePersonaUserMessage(tenant, title, recentTitles, additionalContext)
       : personaTag
         ? buildDialogueUserMessage(tenant, title, personaTag, recentTitles, additionalContext)
