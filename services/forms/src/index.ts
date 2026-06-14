@@ -3,6 +3,7 @@ import express from 'express';
 import mongoose from 'mongoose';
 import cors from 'cors';
 import submitRouter from './routes/submit';
+import submitSiteRouter from './routes/submit-site';
 import submissionsRouter from './routes/submissions';
 
 const app = express();
@@ -30,7 +31,19 @@ app.options('/submit/:tenantId', (req, res) => {
   res.sendStatus(204);
 });
 
+// Handle preflight OPTIONS requests for site-based submit
+app.options('/api/submit', (req, res) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+  res.sendStatus(204);
+});
+
 app.use('/submit', submitRouter);
+app.use('/api/submit', submitSiteRouter);
 app.use('/submissions', submissionsRouter);
 
 async function start(): Promise<void> {
