@@ -25,7 +25,11 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  if (!origin || tenant.allowed_origin !== origin) {
+  const allowedOrigins = tenant.allowed_origins?.length
+    ? tenant.allowed_origins
+    : [tenant.allowed_origin];
+
+  if (!origin || !allowedOrigins.includes(origin)) {
     res.status(403).json({ error: 'Invalid origin' });
     return;
   }

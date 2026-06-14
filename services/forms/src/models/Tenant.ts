@@ -5,6 +5,7 @@ export interface ITenant extends Document {
   api_key: string;
   name: string;
   allowed_origin: string;
+  allowed_origins?: string[];
   recipient_email: string;
   recipient_field?: string;
   reply_to_field: string;
@@ -21,6 +22,7 @@ const TenantSchema = new Schema<ITenant>({
   api_key: { type: String, required: true },
   name: { type: String, required: true },
   allowed_origin: { type: String, required: true },
+  allowed_origins: { type: [String], required: false },
   recipient_email: { type: String, required: true },
   recipient_field: { type: String, required: false },
   reply_to_field: { type: String, required: true },

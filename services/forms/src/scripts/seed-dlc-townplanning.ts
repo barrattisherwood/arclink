@@ -24,6 +24,7 @@ async function seed(): Promise<void> {
     api_key: createHash('sha256').update(rawKey).digest('hex'),
     name: 'DLC Town Planning',
     allowed_origin: 'https://www.dlcgroup.co.za',
+    allowed_origins: ['https://www.dlcgroup.co.za', 'https://dlc-town-planning.pages.dev'],
     recipient_email: 'fj@dlcgroup.co.za',
     reply_to_field: 'email',
     brand_color: '#1a3a5c',
