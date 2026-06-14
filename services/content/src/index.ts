@@ -18,6 +18,8 @@ const ALLOWED_ORIGINS = [
   'https://www.machinum.io',
   'https://dlctownplanning.co.za',
   'https://www.dlctownplanning.co.za',
+  'https://dlc-town-planning.pages.dev',
+  'https://www.dlcgroup.co.za',
   'http://localhost:4200',
   'http://localhost:4201',
   'http://localhost:3000',
