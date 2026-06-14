@@ -36,20 +36,17 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
 
   res.setHeader('Access-Control-Allow-Origin', origin);
 
-  // Flatten: include form name as a context field so it appears in the email
-  const fields: Record<string, unknown> = {
-    ...(form ? { form } : {}),
-    ...data,
-  };
+  // Store form name in submission for reference, but keep it out of the email body
+  const submissionFields: Record<string, unknown> = { ...(form ? { form } : {}), ...data };
 
   await Submission.create({
     tenant_id: tenant.id,
     tenant_name: tenant.name,
-    fields,
+    fields: submissionFields,
   });
 
   try {
-    await sendFormEmail(tenant, fields);
+    await sendFormEmail(tenant, data);
   } catch (err) {
     console.error('[submit-site] Email send failed:', err);
     res.status(502).json({ error: 'Failed to send email' });

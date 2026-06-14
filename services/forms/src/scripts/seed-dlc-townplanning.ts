@@ -25,7 +25,7 @@ async function seed(): Promise<void> {
     name: 'DLC Town Planning',
     allowed_origin: 'https://www.dlcgroup.co.za',
     allowed_origins: ['https://www.dlcgroup.co.za', 'https://dlc-town-planning.pages.dev'],
-    recipient_email: 'fj@dlcgroup.co.za',
+    recipient_email: 'b4rr4tt@gmail.com',
     reply_to_field: 'email',
     brand_color: '#1a3a5c',
     rate_limit: 10,
