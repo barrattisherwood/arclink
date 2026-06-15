@@ -5,6 +5,37 @@ import { sendFormEmail } from '../services/email';
 
 const router = Router();
 
+async function getAllowedOrigins(site: string): Promise<string[]> {
+  const tenant = await Tenant.findOne({ id: site });
+  if (!tenant || !tenant.active) return [];
+  return tenant.allowed_origins?.length ? tenant.allowed_origins : [tenant.allowed_origin];
+}
+
+function setCorsHeaders(res: Response, origin: string): void {
+  res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+}
+
+// Handle preflight inline so Cloudflare proxy doesn't swallow it
+router.options('/', async (req: Request, res: Response): Promise<void> => {
+  const origin = req.headers.origin;
+  const site = req.query.site as string | undefined ?? (req.body as any)?.site;
+
+  if (origin && site) {
+    const allowed = await getAllowedOrigins(site);
+    if (allowed.includes(origin)) {
+      setCorsHeaders(res, origin);
+      res.sendStatus(204);
+      return;
+    }
+  }
+
+  // Allow preflight through even without site context — POST will enforce auth
+  if (origin) setCorsHeaders(res, origin);
+  res.sendStatus(204);
+});
+
 router.post('/', async (req: Request, res: Response): Promise<void> => {
   const origin = req.headers.origin;
   const { site, form, data } = req.body as {
@@ -34,7 +65,7 @@ router.post('/', async (req: Request, res: Response): Promise<void> => {
     return;
   }
 
-  res.setHeader('Access-Control-Allow-Origin', origin);
+  setCorsHeaders(res, origin);
 
   // Store form name in submission for reference, but keep it out of the email body
   const submissionFields: Record<string, unknown> = { ...(form ? { form } : {}), ...data };
