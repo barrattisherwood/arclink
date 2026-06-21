@@ -11,6 +11,15 @@ const PORT = process.env.PORT ?? 3001;
 
 app.use(express.json());
 
+// Global OPTIONS handler — must come before all routes
+app.options('*', (req, res) => {
+  const origin = req.headers.origin;
+  if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
+  res.setHeader('Access-Control-Allow-Methods', 'POST, GET, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
+  res.sendStatus(204);
+});
+
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://admin.arclink.dev,https://dashboard.arclink.dev,http://localhost:4200').split(',');
 
 // CORS for admin reads
