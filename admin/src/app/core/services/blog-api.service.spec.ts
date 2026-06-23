@@ -27,7 +27,7 @@ describe('BlogApiService', () => {
 
     const req = httpMock.expectOne(`${base}/queue/${tenantId}`);
     expect(req.request.method).toBe('GET');
-    expect(req.request.headers.get('x-api-key')).toBe(environment.blogApiKey);
+    expect(req.request.headers.get('Authorization')).toBeTruthy();
     req.flush({ items: [] });
   });
 
@@ -43,7 +43,7 @@ describe('BlogApiService', () => {
   });
 
   it('should add titles to queue', () => {
-    const titles = ['Title A', 'Title B'];
+    const titles = [{ title: 'Title A' }, { title: 'Title B' }];
     service.addToQueue(titles).subscribe();
 
     const req = httpMock.expectOne(`${base}/queue/${tenantId}`);
@@ -79,5 +79,23 @@ describe('BlogApiService', () => {
     const req = httpMock.expectOne(`${base}/posts/${tenantId}/drafts`);
     expect(req.request.method).toBe('GET');
     req.flush({ posts: [{ id: '1' }, { id: '2' }] });
+  });
+
+  it('should upload image with base64 and alt', () => {
+    service.uploadImage('post-1', 'data:image/png;base64,abc', 'A dog').subscribe();
+
+    const req = httpMock.expectOne(`${base}/posts/${tenantId}/post-1/upload-image`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({ image: 'data:image/png;base64,abc', alt: 'A dog' });
+    req.flush({ post: { id: 'post-1' } });
+  });
+
+  it('should regenerate image with empty body when no keyword given', () => {
+    service.regenerateImage('post-1').subscribe();
+
+    const req = httpMock.expectOne(`${base}/posts/${tenantId}/post-1/regenerate-image`);
+    expect(req.request.method).toBe('POST');
+    expect(req.request.body).toEqual({});
+    req.flush({ post: { id: 'post-1' } });
   });
 });

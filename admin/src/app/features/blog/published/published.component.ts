@@ -82,6 +82,33 @@ import { Post } from '../../../models/blog.model';
             <p class="text-sm font-medium text-white truncate pr-4">{{ editPost()!.title }}</p>
             <button (click)="closeEdit()" class="text-[#555] hover:text-white text-lg leading-none cursor-pointer">✕</button>
           </div>
+          <!-- Image -->
+          <div class="px-5 py-4 border-b border-[#1a1a1a]">
+            @if (editPost()?.featured_image?.url) {
+              <img data-testid="edit-featured-image"
+                   [src]="editPost()!.featured_image!.url"
+                   [alt]="editPost()!.featured_image!.alt"
+                   class="w-full max-h-48 object-cover rounded-md mb-3">
+            } @else {
+              <div data-testid="edit-image-placeholder"
+                   class="w-full h-32 bg-[#1a1a1a] rounded-md flex items-center justify-center mb-3">
+                <span class="text-sm text-[#555]">No image</span>
+              </div>
+            }
+            <div class="flex gap-2">
+              <button data-testid="edit-regenerate-btn"
+                      (click)="regenerateImage()"
+                      [disabled]="regenerating()"
+                      class="px-3 py-1.5 text-xs rounded-md bg-[#1a1a1a] hover:bg-[#222] text-white disabled:opacity-50 cursor-pointer transition-colors">
+                @if (regenerating()) { Generating… } @else { New Image }
+              </button>
+              <label class="px-3 py-1.5 text-xs rounded-md bg-[#1a1a1a] hover:bg-[#222] text-white cursor-pointer transition-colors">
+                Upload
+                <input type="file" accept="image/*" (change)="onFileSelected($event)" class="hidden">
+              </label>
+            </div>
+          </div>
+
           @if (loadingEdit()) {
             <p class="p-5 text-xs text-[#555]">Loading…</p>
           } @else {
@@ -116,6 +143,7 @@ export class PublishedComponent implements OnInit {
   editContent = '';
   saving = signal(false);
   loadingEdit = signal(false);
+  regenerating = signal(false);
 
   ngOnInit() { this.load(); }
 
@@ -173,6 +201,31 @@ export class PublishedComponent implements OnInit {
       },
       error: () => { this.saving.set(false); this.toast.error('Failed to save'); }
     });
+  }
+
+  regenerateImage() {
+    const post = this.editPost();
+    if (!post) return;
+    this.regenerating.set(true);
+    this.api.regenerateImage(post.id).subscribe({
+      next: res => { this.editPost.set(res.post); this.regenerating.set(false); this.toast.success('Image regenerated'); },
+      error: () => { this.regenerating.set(false); this.toast.error('Failed to regenerate image'); },
+    });
+  }
+
+  onFileSelected(event: Event) {
+    const post = this.editPost();
+    if (!post) return;
+    const file = (event.target as HTMLInputElement).files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      this.api.uploadImage(post.id, reader.result as string).subscribe({
+        next: res => { this.editPost.set(res.post); this.toast.success('Image uploaded'); },
+        error: () => this.toast.error('Failed to upload image'),
+      });
+    };
+    reader.readAsDataURL(file);
   }
 
   setFeatured(id: string) {
