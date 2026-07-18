@@ -171,6 +171,21 @@ import { TitleSuggestion, QueueItem, Post } from '../../../models/blog.model';
           </div>
         }
 
+        <!-- Custom title -->
+        <div class="mt-4 pt-4 border-t border-[#1a1a1a] flex gap-2">
+          <input data-testid="custom-title-input"
+                 type="text"
+                 [(ngModel)]="customTitle"
+                 placeholder="Add a custom title…"
+                 class="flex-1 px-3 py-1.5 text-xs rounded-md bg-[#0a0a0a] border border-[#222] text-white placeholder-[#444] focus:outline-none focus:border-purple-500 transition-colors">
+          <button data-testid="custom-title-btn"
+                  (click)="addCustomTitle()"
+                  [disabled]="!customTitle.trim() || addingCustom()"
+                  class="px-3 py-1.5 text-xs rounded-md bg-purple-700 hover:bg-purple-600 text-white disabled:opacity-40 cursor-pointer transition-colors whitespace-nowrap">
+            Add
+          </button>
+        </div>
+
       </div>
 
       <!-- Queue Panel -->
@@ -233,6 +248,8 @@ export class QueueComponent implements OnInit {
   suggestions = signal<TitleSuggestion[]>([]);
   selected = signal<Set<string>>(new Set());
   selectedPersona = '';
+  customTitle = '';
+  addingCustom = signal(false);
   queue = signal<QueueItem[]>([]);
   reasoning = signal('');
   loading = signal(false);
@@ -295,6 +312,21 @@ export class QueueComponent implements OnInit {
         this.toast.success(`Added ${titles.length} to queue`);
       },
       error: () => this.toast.error('Failed to add to queue')
+    });
+  }
+
+  addCustomTitle() {
+    const title = this.customTitle.trim();
+    if (!title) return;
+    this.addingCustom.set(true);
+    this.api.addToQueue([{ title }]).subscribe({
+      next: res => {
+        this.queue.set(res.items);
+        this.customTitle = '';
+        this.addingCustom.set(false);
+        this.toast.success('Added to queue');
+      },
+      error: () => { this.addingCustom.set(false); this.toast.error('Failed to add to queue'); },
     });
   }
 
