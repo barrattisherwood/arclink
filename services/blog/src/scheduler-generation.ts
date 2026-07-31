@@ -42,15 +42,16 @@ async function processScheduledItem(itemId: string): Promise<void> {
     const personaTags = tenant.blog_persona_prompts ? [...tenant.blog_persona_prompts.keys()] : [];
     const personaTag: string | null = item.persona_tag ?? (personaTags[0] ?? null);
 
-    const generated = await generatePost(
+    const generated = await generatePost({
       tenant,
-      item.title,
-      [],
+      title: item.title,
+      recentTitles: [],
       personaTag,
-      item.fixtures?.length ? item.fixtures : undefined,
-      item.additional_context ?? null,
-      item.force_single_persona ?? false,
-    );
+      fixtures: item.fixtures?.length ? item.fixtures : undefined,
+      additionalContext: item.additional_context ?? null,
+      forceSinglePersona: item.force_single_persona ?? false,
+      contentType: item.content_type,
+    });
 
     const featured_image = tenant.blog_images_enabled
       ? await fetchUnsplashImage(generated.unsplash_keyword, generated.alt_text || item.title)

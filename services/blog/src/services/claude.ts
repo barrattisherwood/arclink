@@ -1,10 +1,27 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { IBlogTenant } from '../models/BlogTenant';
 import { IFixtureEntry } from '../models/Post';
+import { CalendarContentType } from '../models/TitleQueue';
 
 const client = new Anthropic();
 
-function buildStandardUserMessage(tenant: IBlogTenant, title: string, recentTitles: string[], additionalContext?: string | null): string {
+export function deriveWordCount(contentType: CalendarContentType | undefined, tenantDefault: number): number {
+  switch (contentType) {
+    case 'match-preview':
+    case 'post-match':
+      return 800;
+    case 'evergreen':
+    case 'season-preview':
+    case 'tournament-window':
+      return 1500;
+    case 'bookmaker-review':
+      return 1000;
+    default:
+      return tenantDefault;
+  }
+}
+
+function buildStandardUserMessage(tenant: IBlogTenant, title: string, recentTitles: string[], additionalContext: string | null | undefined, wordCount: number): string {
   const tagInstruction = tenant.blog_predefined_tags.length > 0
     ? `Choose 3–5 tags from this list where relevant, but you may add new ones if needed: ${tenant.blog_predefined_tags.join(', ')}.`
     : 'Generate 3–5 relevant tags for this post.';
@@ -18,7 +35,7 @@ function buildStandardUserMessage(tenant: IBlogTenant, title: string, recentTitl
 Blog subject: ${tenant.blog_subject}
 Target audience: ${tenant.blog_audience}
 Tone: ${tenant.blog_tone}
-Target word count: approximately ${tenant.blog_word_count} words
+Target word count: approximately ${wordCount} words
 Post title: ${title}
 
 ${additionalContext ? `Editorial brief:\n${additionalContext}\n` : ''}${recentTitles.length > 0 ? `Recent posts (avoid overlap):\n${recentTitles.map(t => `- ${t}`).join('\n')}` : ''}
@@ -40,7 +57,7 @@ ${tagInstruction}
 ${categoryInstruction}`;
 }
 
-function buildSinglePersonaUserMessage(tenant: IBlogTenant, title: string, recentTitles: string[], additionalContext?: string | null): string {
+function buildSinglePersonaUserMessage(tenant: IBlogTenant, title: string, recentTitles: string[], additionalContext: string | null | undefined, wordCount: number): string {
   const tagInstruction = tenant.blog_predefined_tags.length > 0
     ? `Choose 3–5 tags from this list where relevant, but you may add new ones if needed: ${tenant.blog_predefined_tags.join(', ')}.`
     : 'Generate 3–5 relevant tags for this post.';
@@ -53,7 +70,7 @@ function buildSinglePersonaUserMessage(tenant: IBlogTenant, title: string, recen
 
 Site: ${tenant.name}
 Audience: ${tenant.blog_audience}
-Target word count: approximately ${tenant.blog_word_count} words
+Target word count: approximately ${wordCount} words
 Post title: ${title}
 
 ${additionalContext ? `Editorial brief:\n${additionalContext}\n` : ''}${recentTitles.length > 0 ? `Recent posts (avoid overlap):\n${recentTitles.map(t => `- ${t}`).join('\n')}` : ''}
@@ -80,7 +97,8 @@ function buildDialogueUserMessage(
   title: string,
   personaTag: string,
   recentTitles: string[],
-  additionalContext?: string | null,
+  additionalContext: string | null | undefined,
+  blockWords: string,
 ): string {
   const allPersonas = Array.from(tenant.blog_persona_prompts?.keys() ?? []);
   const otherPersona = allPersonas.find(p => p !== personaTag) ?? null;
@@ -112,8 +130,8 @@ ${p2 ? `
 [/${p2}]
 ` : ''}
 Structure:
-1. [${p1}] opens with their primary analytical lens (200–250 words)
-${p2 ? `2. [${p2}] responds with their angle, references ${personaTag}'s point (200–250 words)
+1. [${p1}] opens with their primary analytical lens (${blockWords} words)
+${p2 ? `2. [${p2}] responds with their angle, references ${personaTag}'s point (${blockWords} words)
 3. [${p1}] closes with final bookmaker recommendation (80–100 words)` : '2. [${p1}] closes with bookmaker recommendation (80–100 words)'}
 
 Rules:
@@ -231,27 +249,42 @@ export interface RankedQueue {
   reasoning: string;
 }
 
-export async function generatePost(
-  tenant: IBlogTenant,
-  title: string,
-  recentTitles: string[],
-  personaTag?: string | null,
-  fixtures?: IFixtureEntry[],
-  additionalContext?: string | null,
-  singlePersona?: boolean,
-): Promise<GeneratedPost> {
+export interface GeneratePostParams {
+  tenant: IBlogTenant;
+  title: string;
+  recentTitles: string[];
+  personaTag?: string | null;
+  fixtures?: IFixtureEntry[];
+  additionalContext?: string | null;
+  forceSinglePersona?: boolean;
+  contentType?: CalendarContentType;
+}
+
+export async function generatePost({
+  tenant,
+  title,
+  recentTitles,
+  personaTag,
+  fixtures,
+  additionalContext,
+  forceSinglePersona = false,
+  contentType,
+}: GeneratePostParams): Promise<GeneratedPost> {
   const isWeeklyRoundup = !!fixtures?.length;
   const personaPrompt = !isWeeklyRoundup && personaTag && tenant.blog_persona_prompts?.get(personaTag);
   // Treat as single-persona if explicitly flagged, or if the tenant only has one persona
-  const effectivelySinglePersona = singlePersona || (tenant.blog_persona_prompts?.size === 1);
+  const effectivelySinglePersona = forceSinglePersona || (tenant.blog_persona_prompts?.size === 1);
+
+  const wordCount = deriveWordCount(contentType, tenant.blog_word_count);
+  const dialogueBlockWords = (contentType === 'match-preview' || contentType === 'post-match') ? '150–180' : '200–250';
 
   const prompt = isWeeklyRoundup
     ? buildWeeklyRoundupMessage(tenant, title, fixtures!)
     : effectivelySinglePersona && personaTag
-      ? buildSinglePersonaUserMessage(tenant, title, recentTitles, additionalContext)
+      ? buildSinglePersonaUserMessage(tenant, title, recentTitles, additionalContext, wordCount)
       : personaTag
-        ? buildDialogueUserMessage(tenant, title, personaTag, recentTitles, additionalContext)
-        : buildStandardUserMessage(tenant, title, recentTitles, additionalContext);
+        ? buildDialogueUserMessage(tenant, title, personaTag, recentTitles, additionalContext, dialogueBlockWords)
+        : buildStandardUserMessage(tenant, title, recentTitles, additionalContext, wordCount);
 
   const systemPrompt = isWeeklyRoundup
     ? buildCombinedPersonaSystem(tenant)

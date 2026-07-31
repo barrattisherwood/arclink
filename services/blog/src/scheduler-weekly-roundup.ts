@@ -64,7 +64,13 @@ export async function runWeeklyRoundup(tenant: IBlogTenant): Promise<void> {
     const title = `${tenant.sport_label} Weekly Preview — ${date}`;
 
     // 4. Generate directly (skip queue for automation)
-    const generated = await generatePost(tenant, title, [], undefined, selected);
+    const generated = await generatePost({
+      tenant,
+      title,
+      recentTitles: [],
+      fixtures: selected,
+      contentType: 'weekly-roundup',
+    });
     const parsed = parseWeeklyRoundup(generated.content);
 
     // 5. Compute derived fields
