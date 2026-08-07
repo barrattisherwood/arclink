@@ -7,7 +7,7 @@ jest.mock('@anthropic-ai/sdk', () => ({
   })),
 }));
 
-import { generatePost, deriveWordCount } from './claude';
+import { generatePost, deriveWordCount, expandPost } from './claude';
 import { IBlogTenant } from '../models/BlogTenant';
 
 function makeTenant(overrides: Partial<IBlogTenant> = {}): IBlogTenant {
@@ -218,5 +218,129 @@ describe('generatePost — recentTitles', () => {
     const prompt = mockCreate.mock.calls[0][0].messages[0].content;
     expect(prompt).toContain('Old Article One');
     expect(prompt).toContain('Old Article Two');
+  });
+});
+
+// ─── expandPost ──────────────────────────────────────────────────────────────
+
+describe('expandPost', () => {
+  const baseParams = {
+    title: 'Wimbledon Betting Guide',
+    existingContent: 'Short existing article content.',
+    targetWordCount: 1800,
+    tenant: makeTenant(),
+  };
+
+  it('includes the existing content in the prompt', async () => {
+    mockCreate.mockResolvedValue(makeApiResponse('Expanded article.'));
+    await expandPost(baseParams);
+    const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+    expect(prompt).toContain('Short existing article content.');
+  });
+
+  it('includes the target word count in the prompt', async () => {
+    mockCreate.mockResolvedValue(makeApiResponse('Expanded article.'));
+    await expandPost(baseParams);
+    const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+    expect(prompt).toContain('1800');
+  });
+
+  it('includes the article title in the prompt', async () => {
+    mockCreate.mockResolvedValue(makeApiResponse('Expanded article.'));
+    await expandPost(baseParams);
+    const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+    expect(prompt).toContain('Wimbledon Betting Guide');
+  });
+
+  it('requests SA-specific context section mentioning SA bookmakers', async () => {
+    mockCreate.mockResolvedValue(makeApiResponse('Expanded article.'));
+    await expandPost(baseParams);
+    const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+    expect(prompt).toContain('Hollywoodbets');
+    expect(prompt).toContain('/bookmakers');
+  });
+
+  it('requests a FAQ section', async () => {
+    mockCreate.mockResolvedValue(makeApiResponse('Expanded article.'));
+    await expandPost(baseParams);
+    const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+    expect(prompt.toLowerCase()).toContain('faq');
+  });
+
+  it('instructs Claude not to include responsible gambling copy', async () => {
+    mockCreate.mockResolvedValue(makeApiResponse('Expanded article.'));
+    await expandPost(baseParams);
+    const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+    expect(prompt).toContain('Do NOT include responsible gambling copy');
+  });
+
+  it('prohibits CTA language in the prompt instructions', async () => {
+    mockCreate.mockResolvedValue(makeApiResponse('Expanded article.'));
+    await expandPost(baseParams);
+    const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+    expect(prompt).toContain('bet now');
+    expect(prompt).toContain('sign up');
+  });
+
+  it('adds retrospective 2026 section instructions when edition2026 is retrospective', async () => {
+    mockCreate.mockResolvedValue(makeApiResponse('Expanded article.'));
+    await expandPost({ ...baseParams, edition2026: 'retrospective' });
+    const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+    expect(prompt).toContain('2026 Edition');
+    expect(prompt).toContain('retrospective');
+  });
+
+  it('adds preview 2026 section instructions when edition2026 is preview', async () => {
+    mockCreate.mockResolvedValue(makeApiResponse('Expanded article.'));
+    await expandPost({ ...baseParams, edition2026: 'preview' });
+    const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+    expect(prompt).toContain('2026 Edition');
+    expect(prompt).toContain('preview');
+  });
+
+  it('omits 2026 section instructions when edition2026 is none', async () => {
+    mockCreate.mockResolvedValue(makeApiResponse('Expanded article.'));
+    await expandPost({ ...baseParams, edition2026: 'none' });
+    const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+    expect(prompt).not.toContain('2026 Edition');
+  });
+
+  it('omits 2026 section instructions when edition2026 is omitted', async () => {
+    mockCreate.mockResolvedValue(makeApiResponse('Expanded article.'));
+    await expandPost(baseParams);
+    const prompt = mockCreate.mock.calls[0][0].messages[0].content;
+    expect(prompt).not.toContain('2026 Edition');
+  });
+
+  it('applies persona system prompt when personaTag matches a tenant persona', async () => {
+    mockCreate.mockResolvedValue(makeApiResponse('Expanded article.'));
+    await expandPost({ ...baseParams, tenant: makeTenant(), personaTag: 'lucky' });
+    const call = mockCreate.mock.calls[0][0];
+    expect(call.system).toContain('Lucky Dlamini');
+  });
+
+  it('sends no system prompt when personaTag is absent', async () => {
+    mockCreate.mockResolvedValue(makeApiResponse('Expanded article.'));
+    await expandPost(baseParams);
+    const call = mockCreate.mock.calls[0][0];
+    expect(call.system).toBeUndefined();
+  });
+
+  it('returns a GeneratedPost with the correct shape', async () => {
+    mockCreate.mockResolvedValue(makeApiResponse('Expanded article content.'));
+    const result = await expandPost(baseParams);
+    expect(result).toHaveProperty('content');
+    expect(result).toHaveProperty('seo_title');
+    expect(result).toHaveProperty('seo_description');
+    expect(result).toHaveProperty('excerpt');
+    expect(result).toHaveProperty('tags');
+    expect(Array.isArray(result.tags)).toBe(true);
+  });
+
+  it('throws when Claude returns no JSON block', async () => {
+    mockCreate.mockResolvedValue({
+      content: [{ type: 'text', text: 'Article with no JSON.' }],
+    });
+    await expect(expandPost(baseParams)).rejects.toThrow('expandPost: Claude did not return expected JSON block');
   });
 });

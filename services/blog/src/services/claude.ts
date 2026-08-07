@@ -249,6 +249,117 @@ export interface RankedQueue {
   reasoning: string;
 }
 
+export type Edition2026 = 'none' | 'retrospective' | 'preview';
+
+export interface ExpandPostParams {
+  title: string;
+  existingContent: string;
+  targetWordCount: number;
+  tenant: IBlogTenant;
+  personaTag?: string | null;
+  edition2026?: Edition2026;
+}
+
+export async function expandPost({
+  title,
+  existingContent,
+  targetWordCount,
+  tenant,
+  personaTag,
+  edition2026 = 'none',
+}: ExpandPostParams): Promise<GeneratedPost> {
+  const personaPrompt = personaTag ? tenant.blog_persona_prompts?.get(personaTag) : undefined;
+
+  const edition2026Block = edition2026 === 'retrospective'
+    ? `\nEVERGREEN STRUCTURE: Write approximately ${targetWordCount - 300} words of evergreen content that will remain accurate in future years, then add a clearly labelled "## 2026 Edition" H2 section (~300 words) covering what happened in the 2026 tournament: key results, standout performances, notable storylines. The 2026 section is retrospective — the tournament is complete.`
+    : edition2026 === 'preview'
+    ? `\nEVERGREEN STRUCTURE: Write approximately ${targetWordCount - 300} words of evergreen content that will remain accurate in future years, then add a clearly labelled "## 2026 Edition" H2 section (~300 words) previewing the upcoming 2026 tournament: player form, surface preparation, draw considerations, markets to watch.`
+    : '';
+
+  const tagInstruction = tenant.blog_predefined_tags.length > 0
+    ? `Choose 3–5 tags from this list where relevant: ${tenant.blog_predefined_tags.join(', ')}.`
+    : 'Generate 3–5 relevant tags.';
+
+  const categoryInstruction = tenant.blog_predefined_categories?.length > 0
+    ? `Choose 1–2 categories: ${tenant.blog_predefined_categories.join(', ')}.`
+    : 'Assign 1–2 broad topic categories.';
+
+  const prompt = `You are expanding an existing tennis betting guide for ${tenant.name}.
+
+Audience: ${tenant.blog_audience}
+
+ARTICLE TITLE: ${title}
+
+EXISTING ARTICLE — use as the basis, preserve factual accuracy, expand substantially:
+${existingContent}
+
+TARGET WORD COUNT: approximately ${targetWordCount} words. Every paragraph must answer a real question a South African bettor would have. Do not pad.
+
+REQUIRED STRUCTURE — every article must include:
+- At least 4 H2 subheadings (## in markdown)
+- A dedicated SA context H2 section: which SA bookmakers (Hollywoodbets, Betway, 10bet) offer this market, Rand staking context, SA timezone notes for live betting, and a contextual link to /bookmakers using informational anchor text such as "licensed SA bookmakers that cover this market"
+- A dedicated market breakdown H2 section: explain each relevant market in plain language, how bookmakers price it, what stats or signals inform a bet, and a worked example using fictional odds (e.g. "If Alcaraz is priced at 1.65...")
+- A FAQ section (## FAQ or ## Frequently Asked Questions) with 3–4 Q&A items targeting featured snippet opportunities
+- At least one cross-link to a related article on the site (surface guides link to each other, tournament guides link to /analysis)${edition2026Block}
+
+HARD RULES:
+- Do NOT include responsible gambling copy — this is injected at the template level.
+- Never use imperative CTA language: do not write "bet now", "sign up", "claim", "join today", "place a wager on".
+- Describe bookmaker features factually. Do not frame them as benefits the reader will experience.
+- Any bonus or offer reference must be followed by "Subject to terms and conditions."
+- Frame everything as analytical and informational throughout.
+
+Write the full article in markdown. Do not include the title as an H1 — start directly with the introduction or first H2.
+
+After the article, output a JSON block (fenced with \`\`\`json):
+{
+  "seo_title": "keyword-rich SERP title, max 60 characters, distinct from the article headline",
+  "seo_description": "meta description, between 140 and 160 characters",
+  "excerpt": "2–3 sentence summary, max 300 characters",
+  "categories": ["Category1"],
+  "tags": ["tag1", "tag2", "tag3"],
+  "unsplash_keyword": "2–3 word Unsplash search term",
+  "alt_text": "descriptive alt text for the featured image"
+}
+
+${tagInstruction}
+${categoryInstruction}`;
+
+  const message = await client.messages.create({
+    model: 'claude-sonnet-4-6',
+    max_tokens: 8000,
+    ...(personaPrompt ? { system: personaPrompt } : {}),
+    messages: [{ role: 'user', content: prompt }],
+  });
+
+  const raw = message.content[0].type === 'text' ? message.content[0].text : '';
+  const jsonMatch = raw.match(/```json\s*([\s\S]*?)```/);
+  if (!jsonMatch) throw new Error('expandPost: Claude did not return expected JSON block');
+
+  const meta = JSON.parse(jsonMatch[1]) as {
+    seo_title: string;
+    seo_description: string;
+    excerpt: string;
+    categories: string[];
+    tags: string[];
+    unsplash_keyword: string;
+    alt_text: string;
+  };
+
+  const content = raw.slice(0, raw.lastIndexOf('```json')).trim();
+
+  return {
+    content,
+    excerpt: meta.excerpt,
+    seo_title: meta.seo_title || title.slice(0, 60),
+    seo_description: meta.seo_description || meta.excerpt.slice(0, 155),
+    categories: meta.categories || [],
+    tags: meta.tags,
+    unsplash_keyword: meta.unsplash_keyword,
+    alt_text: meta.alt_text,
+  };
+}
+
 export interface GeneratePostParams {
   tenant: IBlogTenant;
   title: string;

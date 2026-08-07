@@ -5,6 +5,7 @@ import { requireAdminJwt } from '../middleware/auth';
 import { BlogTenant } from '../models/BlogTenant';
 import { Post } from '../models/Post';
 import { PERSONA_REGISTRY } from '../services/persona-registry';
+import { runTennisExpansion } from '../scripts/expand-tennis-guides';
 
 const router = Router();
 
@@ -160,6 +161,33 @@ router.post('/migrate-findtherapy', requireAdminJwt, async (_req: Request, res: 
 
   console.log(`[MigrateFindtherapy] Done — ${upserted} upserted, ${skipped} skipped`);
   res.json({ ok: true, fetched: totalFetched, upserted, skipped });
+});
+
+// POST /api/admin/expand-tennis-guides
+// Dry-run by default. Pass { "execute": true } to apply expansion and update tenant word count.
+// Returns 400 if any of the 12 spec articles have no DB match.
+router.post('/expand-tennis-guides', requireAdminJwt, async (req: Request, res: Response): Promise<void> => {
+  const execute = req.body?.execute === true;
+
+  const tenant = await BlogTenant.findOne({ siteId: 'satennis' });
+  if (!tenant) {
+    res.status(404).json({ error: 'SA Tennis Bets tenant not found' });
+    return;
+  }
+
+  const output = await runTennisExpansion(execute, tenant);
+
+  if (output.unmatched.length > 0) {
+    res.status(400).json({
+      error: 'Some spec articles have no DB match — resolve before running execute',
+      unmatched: output.unmatched,
+      allTitles: output.allTitles,
+      plan: output.plan,
+    });
+    return;
+  }
+
+  res.json({ ok: true, execute, ...output });
 });
 
 export default router;
