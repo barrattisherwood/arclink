@@ -59,6 +59,7 @@ export interface ExpansionResult {
   success: boolean;
   newWordCount?: number;
   error?: string;
+  skipped?: boolean;
 }
 
 export interface TennisExpansionOutput {
@@ -105,6 +106,12 @@ export async function runTennisExpansion(
     for (const spec of GUIDES) {
       const post = allPosts.find(p => p.title.toLowerCase().includes(spec.titleMatch.toLowerCase()));
       if (!post) continue;
+
+      const currentWords = post.word_count ?? countWords(post.content);
+      if (currentWords >= spec.targetWordCount) {
+        results.push({ dbTitle: post.title, success: true, newWordCount: currentWords, skipped: true });
+        continue;
+      }
 
       try {
         const expanded = await expandPost({
