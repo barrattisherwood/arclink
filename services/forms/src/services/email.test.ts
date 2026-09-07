@@ -76,6 +76,41 @@ describe('sendFormEmail', () => {
     });
   });
 
+  describe('cc', () => {
+    it('sets cc when cc_emails is set', async () => {
+      const tenant = makeTenant({ cc_emails: ['second@example.com'] });
+      await sendFormEmail(tenant, { name: 'Alice', email: 'alice@test.com' });
+
+      expect(mockSend).toHaveBeenCalledWith(
+        expect.objectContaining({ cc: ['second@example.com'] }),
+      );
+    });
+
+    it('omits cc when cc_emails is not set', async () => {
+      const tenant = makeTenant();
+      await sendFormEmail(tenant, { name: 'Alice', email: 'alice@test.com' });
+
+      const call = mockSend.mock.calls[0][0];
+      expect(call).not.toHaveProperty('cc');
+    });
+
+    it('omits cc when cc_emails is an empty array', async () => {
+      const tenant = makeTenant({ cc_emails: [] });
+      await sendFormEmail(tenant, { name: 'Alice', email: 'alice@test.com' });
+
+      const call = mockSend.mock.calls[0][0];
+      expect(call).not.toHaveProperty('cc');
+    });
+
+    it('does not cc the confirmation email sent to the submitter', async () => {
+      const tenant = makeTenant({ cc_emails: ['second@example.com'], confirmation_enabled: true });
+      await sendFormEmail(tenant, { name: 'Alice', email: 'alice@test.com' });
+
+      const confirmCall = mockSend.mock.calls[1][0];
+      expect(confirmCall).not.toHaveProperty('cc');
+    });
+  });
+
   describe('reply-to', () => {
     it('sets replyTo from body[reply_to_field] when it is a string', async () => {
       const tenant = makeTenant();

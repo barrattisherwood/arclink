@@ -165,6 +165,7 @@ export async function sendFormEmail(tenant: ITenant, body: Record<string, unknow
     html: buildEmailHtml(tenant, fields),
     text: buildEmailText(fields),
     ...(replyToEmail ? { replyTo: replyToEmail } : {}),
+    ...(tenant.cc_emails?.length ? { cc: tenant.cc_emails } : {}),
   });
 
   if (error) {

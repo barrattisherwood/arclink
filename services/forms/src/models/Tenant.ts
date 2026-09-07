@@ -8,6 +8,7 @@ export interface ITenant extends Document {
   allowed_origins?: string[];
   recipient_email: string;
   recipient_field?: string;
+  cc_emails?: string[];
   reply_to_field: string;
   brand_color?: string;
   confirmation_enabled?: boolean;
@@ -25,6 +26,7 @@ const TenantSchema = new Schema<ITenant>({
   allowed_origins: { type: [String], required: false },
   recipient_email: { type: String, required: true },
   recipient_field: { type: String, required: false },
+  cc_emails: { type: [String], required: false },
   reply_to_field: { type: String, required: true },
   brand_color: { type: String, required: false },
   confirmation_enabled: { type: Boolean, required: false, default: false },
