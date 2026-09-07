@@ -1,6 +1,7 @@
 import { Injectable, inject } from '@angular/core';
 import { HttpClient, HttpHeaders, HttpParams } from '@angular/common/http';
 import { environment } from '../../../environments/environment';
+import { AuthService } from './auth.service';
 
 export interface FormSubmission {
   _id: string;
@@ -13,10 +14,14 @@ export interface FormSubmission {
 @Injectable({ providedIn: 'root' })
 export class FormsApiService {
   private http = inject(HttpClient);
+  private auth = inject(AuthService);
   private base = environment.formsApiUrl;
 
   private get headers(): HttpHeaders {
-    return new HttpHeaders();
+    const token = this.auth.getToken();
+    return token
+      ? new HttpHeaders({ Authorization: `Bearer ${token}` })
+      : new HttpHeaders();
   }
 
   getSubmissions(tenantId: string, params?: { limit?: number; offset?: number }) {
