@@ -1,4 +1,5 @@
 import { Component, inject, signal, OnInit } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
 import { DatePipe, KeyValuePipe } from '@angular/common';
 import { FormsApiService, FormSubmission } from '../../../core/services/forms-api.service';
 import { AuthService } from '../../../core/services/auth.service';
@@ -84,6 +85,7 @@ export class SubmissionsComponent implements OnInit {
   private formsApi = inject(FormsApiService);
   private auth = inject(AuthService);
   private toast = inject(ToastService);
+  private route = inject(ActivatedRoute);
 
   Object = Object;
   Math = Math;
@@ -97,8 +99,7 @@ export class SubmissionsComponent implements OnInit {
   expanded = signal<Set<string>>(new Set());
 
   private get tenantId(): string {
-    const user = this.auth.user();
-    return user?.siteId === '*' ? '_' : user?.siteId || '_';
+    return this.route.snapshot.parent?.paramMap.get('siteId') || this.auth.user()?.siteId || '';
   }
 
   ngOnInit() { this.load(); }

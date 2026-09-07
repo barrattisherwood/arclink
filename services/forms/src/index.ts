@@ -16,7 +16,7 @@ app.options('*', (req, res) => {
   const origin = req.headers.origin;
   if (origin) res.setHeader('Access-Control-Allow-Origin', origin);
   res.setHeader('Access-Control-Allow-Methods', 'POST, GET, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-api-key, Authorization');
   res.sendStatus(204);
 });
 
@@ -26,7 +26,7 @@ const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS || 'https://admin.arclink.d
 app.use('/submissions', cors({
   origin: ALLOWED_ORIGINS,
   methods: ['GET', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'x-api-key'],
+  allowedHeaders: ['Content-Type', 'x-api-key', 'Authorization'],
 }));
 
 // Handle preflight OPTIONS requests for submit
