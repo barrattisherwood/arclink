@@ -1,6 +1,8 @@
 const mockPostFind = jest.fn();
 const mockPostUpdateMany = jest.fn();
 const mockSave = jest.fn();
+const mockBlogTenantFindOne = jest.fn();
+const mockRevalidateSite = jest.fn();
 
 jest.mock('node-cron', () => ({ schedule: jest.fn() }));
 jest.mock('./models/Post', () => ({
@@ -9,6 +11,12 @@ jest.mock('./models/Post', () => ({
     updateMany: (...a: any[]) => mockPostUpdateMany(...a),
   },
 }));
+jest.mock('./models/BlogTenant', () => ({
+  BlogTenant: { findOne: (...a: any[]) => mockBlogTenantFindOne(...a) },
+}));
+jest.mock('./services/revalidate', () => ({
+  revalidateSite: (...a: any[]) => mockRevalidateSite(...a),
+}));
 
 import { runDraftPublisher } from './scheduler-draft-publisher';
 
@@ -16,6 +24,7 @@ function makePost(overrides: Record<string, any> = {}) {
   return {
     id: 'post-1',
     tenant_id: 'tenant-1',
+    slug: 'post-1-slug',
     status: 'draft',
     generated: true,
     article_format: 'dialogue',
@@ -32,6 +41,7 @@ beforeEach(() => {
   jest.clearAllMocks();
   mockPostUpdateMany.mockResolvedValue({});
   mockSave.mockResolvedValue({});
+  mockBlogTenantFindOne.mockResolvedValue({ id: 'tenant-1', sport_key: 'football' });
 });
 
 describe('runDraftPublisher — no drafts', () => {
@@ -111,5 +121,40 @@ describe('runDraftPublisher — mixed batch', () => {
     expect(dialogue.featured).toBe(false);
     expect(roundup.featured).toBe(true);
     expect(mockSave).toHaveBeenCalledTimes(2);
+  });
+});
+
+describe('runDraftPublisher — cache revalidation', () => {
+  it('revalidates the site for a published post using the tenant sport_key', async () => {
+    const post = makePost({ tenant_id: 'tenant-1', slug: 'my-post' });
+    mockPostFind.mockResolvedValue([post]);
+    mockBlogTenantFindOne.mockResolvedValue({ id: 'tenant-1', sport_key: 'football' });
+    await runDraftPublisher(NOW);
+    expect(mockRevalidateSite).toHaveBeenCalledWith('football', ['/my-post']);
+  });
+
+  it('looks up the tenant only once per unique tenant_id in a batch', async () => {
+    const p1 = makePost({ id: 'p1', tenant_id: 'tenant-1', slug: 'a' });
+    const p2 = makePost({ id: 'p2', tenant_id: 'tenant-1', slug: 'b' });
+    mockPostFind.mockResolvedValue([p1, p2]);
+    await runDraftPublisher(NOW);
+    expect(mockBlogTenantFindOne).toHaveBeenCalledTimes(1);
+    expect(mockRevalidateSite).toHaveBeenCalledTimes(2);
+  });
+
+  it('skips revalidation when the tenant has no sport_key', async () => {
+    const post = makePost();
+    mockPostFind.mockResolvedValue([post]);
+    mockBlogTenantFindOne.mockResolvedValue({ id: 'tenant-1', sport_key: '' });
+    await runDraftPublisher(NOW);
+    expect(mockRevalidateSite).not.toHaveBeenCalled();
+  });
+
+  it('skips revalidation when the tenant is not found', async () => {
+    const post = makePost();
+    mockPostFind.mockResolvedValue([post]);
+    mockBlogTenantFindOne.mockResolvedValue(null);
+    await runDraftPublisher(NOW);
+    expect(mockRevalidateSite).not.toHaveBeenCalled();
   });
 });

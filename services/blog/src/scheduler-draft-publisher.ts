@@ -1,5 +1,7 @@
 import cron from 'node-cron';
 import { Post } from './models/Post';
+import { BlogTenant } from './models/BlogTenant';
+import { revalidateSite } from './services/revalidate';
 
 export async function runDraftPublisher(now = new Date()): Promise<void> {
   const cutoff = new Date(now.getTime() - 2 * 60 * 60 * 1000);
@@ -26,6 +28,18 @@ export async function runDraftPublisher(now = new Date()): Promise<void> {
     }
 
     await post.save();
+  }
+
+  const sportKeyByTenant = new Map<string, string>();
+  for (const post of drafts) {
+    if (!sportKeyByTenant.has(post.tenant_id)) {
+      const tenant = await BlogTenant.findOne({ id: post.tenant_id });
+      sportKeyByTenant.set(post.tenant_id, tenant?.sport_key ?? '');
+    }
+    const sportKey = sportKeyByTenant.get(post.tenant_id);
+    if (sportKey) {
+      await revalidateSite(sportKey, [`/${post.slug}`]);
+    }
   }
 
   const roundups = drafts.filter(p => p.article_format === 'weekly-roundup').length;

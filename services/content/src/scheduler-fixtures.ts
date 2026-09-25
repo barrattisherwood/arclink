@@ -230,13 +230,15 @@ export function startFixtureScheduler(): void {
   cron.schedule('0 2 * * 1', async () => {
     console.log('[FixtureScheduler] Tennis Monday run');
     try { await runTennis(); } catch (err) { console.error('[FixtureScheduler] Tennis failed:', err); }
+    await sendFixtureSyncReport();
   });
   cron.schedule('0 2 * * 4', async () => {
     console.log('[FixtureScheduler] Tennis Thursday run');
     try { await runTennis(); } catch (err) { console.error('[FixtureScheduler] Tennis failed:', err); }
+    await sendFixtureSyncReport();
   });
 
-  // Cricket — Monday + Thursday 02:30 UTC (last sport for Mon/Thu — send report after)
+  // Cricket — Monday + Thursday 02:30 UTC
   cron.schedule('30 2 * * 1', async () => {
     console.log('[FixtureScheduler] Cricket Monday run');
     try { await runCricket(); } catch (err) { console.error('[FixtureScheduler] Cricket failed:', err); }
@@ -252,13 +254,15 @@ export function startFixtureScheduler(): void {
   cron.schedule('0 3 * * 2', async () => {
     console.log('[FixtureScheduler] Rugby Tuesday run');
     try { await runRugby(); } catch (err) { console.error('[FixtureScheduler] Rugby failed:', err); }
+    await sendFixtureSyncReport();
   });
   cron.schedule('0 3 * * 5', async () => {
     console.log('[FixtureScheduler] Rugby Friday run');
     try { await runRugby(); } catch (err) { console.error('[FixtureScheduler] Rugby failed:', err); }
+    await sendFixtureSyncReport();
   });
 
-  // Football — Tuesday + Friday 03:30 UTC (last sport for Tue/Fri — send report after)
+  // Football — Tuesday + Friday 03:30 UTC
   cron.schedule('30 3 * * 2', async () => {
     console.log('[FixtureScheduler] Football Tuesday run');
     try { await runFootball(); } catch (err) { console.error('[FixtureScheduler] Football failed:', err); }
