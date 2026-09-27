@@ -1,0 +1,54 @@
+I'm having trouble showing the fixtures for the subsequent football pages / comps
+The match cards show CHAMPIONS LEAGUE, PREMIER LEAGUE — that's almost certainly CSS text-transform: uppercase. Let me verify what's actually stored vs displayed:
+
+Bash Check match card competition display
+IN
+grep -n "uppercase\|competition" "e:/New Cool Coode breh/odds-nx/libs/ui/content/src/lib/match-card/match-card.component.ts" 2>/dev/null; cat "e:/New Cool Coode breh/odds-nx/libs/ui/content/src/lib/match-card/match-card.component.html" 2>/dev/null | grep -i "competition\|uppercase"
+
+OUT
+    <span class="text-xs font-medium text-gray-500 uppercase tracking-wide">
+      {{ fixture().competition }}
+Confirmed — uppercase is CSS only. The actual stored value is whatever fixture().competition contains. The home page shows those fixtures fine because getUpcoming() has no filter. The competition pages pass 'Champions League', 'Premier League' etc. to ?competition= — if Arclink stored them differently (e.g. UEFA Champions League, English Premier League) the filter returns nothing.
+
+You need to check the exact competition string values in your Arclink fixtures. Can you open one of the Champions League fixtures in the Arclink admin and tell me what the competition field says exactly? That'll tell us the right strings to use.
+
+
+Surely a full string like that is not a good idea, can we not use the tags like we do elsewhere for the comps?
+Exactly right — exact string matching on competition is fragile. We should store a tag slug (like ucl, epl, psl) on each fixture, mirroring how competitionTag works in the blog service. Then the frontend just queries ?tag=ucl.
+
+I need to update scheduler-fixtures.ts and sync-fixtures-now.ts to add tags to each competition and store them in the fixture data.
+
+Read e:\New Cool Coode breh\api.arclink.dev\services\content\src\scheduler-fixtures.ts (lines 2-56)
+Read e:\New Cool Coode breh\api.arclink.dev\services\content\src\scheduler-fixtures.ts (lines 56-165)
+Now I have the full picture. I'll update both files — add tag to all competitions, thread it through LiveFixture, store it in data, and re-run the sync.
+
+Edit e:\New Cool Coode breh\api.arclink.dev\services\content\src\scheduler-fixtures.ts
+Added 1 line
+Need to thread tag through fetchFixtures and syncFixtures. Let me fix both:
+
+Edit e:\New Cool Coode breh\api.arclink.dev\services\content\src\scheduler-fixtures.ts
+Modified
+Edit e:\New Cool Coode breh\api.arclink.dev\services\content\src\scheduler-fixtures.ts
+Added 1 line
+Now store tag in the upserted data:
+
+Read e:\New Cool Coode breh\api.arclink.dev\services\content\src\scheduler-fixtures.ts (lines 156-175)
+Read e:\New Cool Coode breh\api.arclink.dev\services\content\src\scheduler-fixtures.ts (lines 173-182)
+Edit e:\New Cool Coode breh\api.arclink.dev\services\content\src\scheduler-fixtures.ts
+Added 1 line
+Now update sync-fixtures-now.ts the same way and re-run it:
+
+Edit e:\New Cool Coode breh\api.arclink.dev\services\content\src\scripts\sync-fixtures-now.ts
+Modified
+Now update fetchFixtures and syncFixtures in the script to carry the tag through:
+
+Edit e:\New Cool Coode breh\api.arclink.dev\services\content\src\scripts\sync-fixtures-now.ts
+Modified
+Read e:\New Cool Coode breh\api.arclink.dev\services\content\src\scripts\sync-fixtures-now.ts (lines 96-110)
+Edit e:\New Cool Coode breh\api.arclink.dev\services\content\src\scripts\sync-fixtures-now.ts
+Modified
+Now update syncFixtures in the script to store tag, then run it:
+
+Edit e:\New Cool Coode breh\api.arclink.dev\services\content\src\scripts\sync-fixtures-now.ts
+Modified
+You've hit your limit · resets 2am (Africa/Johannesburg)
