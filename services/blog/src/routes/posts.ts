@@ -5,7 +5,7 @@ import { requireAuth, resolveTenant } from '../middleware/auth';
 import { Post } from '../models/Post';
 import { IBlogTenant } from '../models/BlogTenant';
 import { fetchUnsplashImageWithFallbacks } from '../services/unsplash';
-import { revalidateSite } from '../services/revalidate';
+import { triggerDeploy } from '../services/deploy-hook';
 
 const router = Router({ mergeParams: true });
 
@@ -233,7 +233,7 @@ router.post('/:postId/feature', requireAuth, async (req: Request, res: Response)
 
   const tenant = req.tenant!;
   if (tenant.sport_key) {
-    await revalidateSite(tenant.sport_key, [`/${post.slug}`]);
+    triggerDeploy(tenant.sport_key);
   }
 
   res.json({ post });
@@ -432,7 +432,7 @@ router.patch('/:postId', requireAuth, async (req: Request, res: Response): Promi
   await post.save();
 
   if (status === 'published' && tenant.sport_key) {
-    await revalidateSite(tenant.sport_key, [`/${post.slug}`]);
+    triggerDeploy(tenant.sport_key);
   }
 
   res.json({ post });

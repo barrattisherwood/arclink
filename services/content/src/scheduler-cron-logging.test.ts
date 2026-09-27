@@ -4,6 +4,7 @@ const mockCronLogUpdate = jest.fn();
 const mockContentTypeFind = jest.fn();
 const mockContentEntryUpdate = jest.fn();
 const mockAxiosGet = jest.fn();
+const mockTriggerDeploy = jest.fn();
 
 jest.mock('node-cron', () => ({ schedule: jest.fn() }));
 jest.mock('axios', () => ({ get: (...args: any[]) => mockAxiosGet(...args) }));
@@ -18,6 +19,9 @@ jest.mock('./models/ContentType', () => ({
 }));
 jest.mock('./models/ContentEntry', () => ({
   ContentEntry: { findOneAndUpdate: (...args: any[]) => mockContentEntryUpdate(...args) },
+}));
+jest.mock('./services/deploy-hook', () => ({
+  triggerDeploy: (...args: any[]) => mockTriggerDeploy(...args),
 }));
 
 import { runSport, FOOTBALL_COMPETITIONS } from './scheduler-fixtures';
@@ -81,6 +85,11 @@ describe('runSport — success', () => {
     const [, update] = mockCronLogUpdate.mock.calls[0];
     expect(update.finishedAt).toBeInstanceOf(Date);
   });
+
+  it('triggers a deploy for the site once fixtures are synced', async () => {
+    await runSport('fixture-sync-football', MINI_COMPETITIONS, 'betwise-football');
+    expect(mockTriggerDeploy).toHaveBeenCalledWith('betwise-football');
+  });
 });
 
 // ─── Status: partial ─────────────────────────────────────────────────────────
@@ -116,6 +125,11 @@ describe('runSport — partial (some 402, some succeed)', () => {
       expect.objectContaining({ fixturesSynced: 1 })
     );
   });
+
+  it('still triggers a deploy — some fixtures did land', async () => {
+    await runSport('fixture-sync-football', MINI_COMPETITIONS, 'betwise-football');
+    expect(mockTriggerDeploy).toHaveBeenCalledWith('betwise-football');
+  });
 });
 
 // ─── Status: failed ───────────────────────────────────────────────────────────
@@ -139,6 +153,11 @@ describe('runSport — failed (all 402)', () => {
     const [, update] = mockCronLogUpdate.mock.calls[0];
     expect(update.syncErrors).toHaveLength(MINI_COMPETITIONS.length);
   });
+
+  it('does not trigger a deploy — nothing synced', async () => {
+    await runSport('fixture-sync-football', MINI_COMPETITIONS, 'betwise-football');
+    expect(mockTriggerDeploy).not.toHaveBeenCalled();
+  });
 });
 
 // ─── Status: failed (unexpected throw) ───────────────────────────────────────
@@ -161,5 +180,6 @@ describe('runSport — failed (unexpected error)', () => {
         ]),
       })
     );
+    expect(mockTriggerDeploy).not.toHaveBeenCalled();
   });
 });

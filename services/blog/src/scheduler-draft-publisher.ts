@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import { Post } from './models/Post';
 import { BlogTenant } from './models/BlogTenant';
-import { revalidateSite } from './services/revalidate';
+import { triggerDeploy } from './services/deploy-hook';
 
 export async function runDraftPublisher(now = new Date()): Promise<void> {
   const cutoff = new Date(now.getTime() - 2 * 60 * 60 * 1000);
@@ -38,7 +38,7 @@ export async function runDraftPublisher(now = new Date()): Promise<void> {
     }
     const sportKey = sportKeyByTenant.get(post.tenant_id);
     if (sportKey) {
-      await revalidateSite(sportKey, [`/${post.slug}`]);
+      triggerDeploy(sportKey);
     }
   }
 

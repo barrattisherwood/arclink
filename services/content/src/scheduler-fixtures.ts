@@ -5,6 +5,7 @@ import { ContentType } from './models/ContentType';
 import { ContentEntry } from './models/ContentEntry';
 import { CronLog } from './models/CronLog';
 import { sendFixtureSyncReport } from './services/report-email';
+import { triggerDeploy } from './services/deploy-hook';
 
 // ---------------------------------------------------------------------------
 // SportDB config — mirrors services/blog/src/services/sportdb.ts
@@ -202,6 +203,9 @@ export async function runSport(
     const status = syncErrors.length === 0 ? 'success' : synced > 0 ? 'partial' : 'failed';
     await CronLog.findByIdAndUpdate(log._id, { finishedAt: new Date(), status, fixturesSynced: synced, syncErrors });
     console.log(`[CronLog] ${job} → ${status} (${synced} synced, ${syncErrors.length} syncErrors)`);
+    if (synced > 0) {
+      triggerDeploy(siteId);
+    }
   } catch (err: any) {
     await CronLog.findByIdAndUpdate(log._id, {
       finishedAt: new Date(),

@@ -1,7 +1,8 @@
 const mockPostFind = jest.fn();
 const mockPostUpdateMany = jest.fn();
 const mockBlogTenantFindOne = jest.fn();
-const mockRevalidateSite = jest.fn();
+const mockTriggerDeploy = jest.fn();
+const mockTriggerDeployNow = jest.fn();
 
 jest.mock('node-cron', () => ({ schedule: jest.fn() }));
 jest.mock('./models/Post', () => ({
@@ -13,11 +14,13 @@ jest.mock('./models/Post', () => ({
 jest.mock('./models/BlogTenant', () => ({
   BlogTenant: { findOne: (...a: any[]) => mockBlogTenantFindOne(...a) },
 }));
-jest.mock('./services/revalidate', () => ({
-  revalidateSite: (...a: any[]) => mockRevalidateSite(...a),
+jest.mock('./services/deploy-hook', () => ({
+  triggerDeploy: (...a: any[]) => mockTriggerDeploy(...a),
+  triggerDeployNow: (...a: any[]) => mockTriggerDeployNow(...a),
+  DEPLOY_HOOK_SPORT_KEYS: ['rugby_union', 'football', 'cricket', 'tennis'],
 }));
 
-import { runScheduledPublisher } from './scheduler';
+import { runScheduledPublisher, runDailyRebuild } from './scheduler';
 
 function makePost(overrides: Record<string, any> = {}) {
   return {
@@ -43,7 +46,7 @@ describe('runScheduledPublisher — no due posts', () => {
     mockPostFind.mockResolvedValue([]);
     await runScheduledPublisher(NOW);
     expect(mockPostUpdateMany).not.toHaveBeenCalled();
-    expect(mockRevalidateSite).not.toHaveBeenCalled();
+    expect(mockTriggerDeploy).not.toHaveBeenCalled();
   });
 });
 
@@ -58,11 +61,11 @@ describe('runScheduledPublisher — due posts', () => {
     );
   });
 
-  it('revalidates the site for each published post using the tenant sport_key', async () => {
+  it('triggers a rebuild for each published post using the tenant sport_key', async () => {
     const post = makePost({ slug: 'my-post' });
     mockPostFind.mockResolvedValue([post]);
     await runScheduledPublisher(NOW);
-    expect(mockRevalidateSite).toHaveBeenCalledWith('football', ['/my-post']);
+    expect(mockTriggerDeploy).toHaveBeenCalledWith('football');
   });
 
   it('looks up the tenant only once per unique tenant_id in a batch', async () => {
@@ -71,22 +74,32 @@ describe('runScheduledPublisher — due posts', () => {
     mockPostFind.mockResolvedValue([p1, p2]);
     await runScheduledPublisher(NOW);
     expect(mockBlogTenantFindOne).toHaveBeenCalledTimes(1);
-    expect(mockRevalidateSite).toHaveBeenCalledTimes(2);
+    expect(mockTriggerDeploy).toHaveBeenCalledTimes(2);
   });
 
-  it('skips revalidation when the tenant has no sport_key', async () => {
+  it('skips triggering a rebuild when the tenant has no sport_key', async () => {
     const post = makePost();
     mockPostFind.mockResolvedValue([post]);
     mockBlogTenantFindOne.mockResolvedValue({ id: 'tenant-1', sport_key: '' });
     await runScheduledPublisher(NOW);
-    expect(mockRevalidateSite).not.toHaveBeenCalled();
+    expect(mockTriggerDeploy).not.toHaveBeenCalled();
   });
 
-  it('skips revalidation when the tenant is not found', async () => {
+  it('skips triggering a rebuild when the tenant is not found', async () => {
     const post = makePost();
     mockPostFind.mockResolvedValue([post]);
     mockBlogTenantFindOne.mockResolvedValue(null);
     await runScheduledPublisher(NOW);
-    expect(mockRevalidateSite).not.toHaveBeenCalled();
+    expect(mockTriggerDeploy).not.toHaveBeenCalled();
+  });
+});
+
+describe('runDailyRebuild', () => {
+  it('triggers an immediate rebuild for every sport with a deploy hook', async () => {
+    await runDailyRebuild();
+    expect(mockTriggerDeployNow).toHaveBeenCalledTimes(4);
+    for (const sportKey of ['rugby_union', 'football', 'cricket', 'tennis']) {
+      expect(mockTriggerDeployNow).toHaveBeenCalledWith(sportKey);
+    }
   });
 });

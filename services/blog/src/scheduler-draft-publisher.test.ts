@@ -2,7 +2,7 @@ const mockPostFind = jest.fn();
 const mockPostUpdateMany = jest.fn();
 const mockSave = jest.fn();
 const mockBlogTenantFindOne = jest.fn();
-const mockRevalidateSite = jest.fn();
+const mockTriggerDeploy = jest.fn();
 
 jest.mock('node-cron', () => ({ schedule: jest.fn() }));
 jest.mock('./models/Post', () => ({
@@ -14,8 +14,8 @@ jest.mock('./models/Post', () => ({
 jest.mock('./models/BlogTenant', () => ({
   BlogTenant: { findOne: (...a: any[]) => mockBlogTenantFindOne(...a) },
 }));
-jest.mock('./services/revalidate', () => ({
-  revalidateSite: (...a: any[]) => mockRevalidateSite(...a),
+jest.mock('./services/deploy-hook', () => ({
+  triggerDeploy: (...a: any[]) => mockTriggerDeploy(...a),
 }));
 
 import { runDraftPublisher } from './scheduler-draft-publisher';
@@ -124,13 +124,13 @@ describe('runDraftPublisher — mixed batch', () => {
   });
 });
 
-describe('runDraftPublisher — cache revalidation', () => {
-  it('revalidates the site for a published post using the tenant sport_key', async () => {
+describe('runDraftPublisher — deploy hook', () => {
+  it('triggers a rebuild for a published post using the tenant sport_key', async () => {
     const post = makePost({ tenant_id: 'tenant-1', slug: 'my-post' });
     mockPostFind.mockResolvedValue([post]);
     mockBlogTenantFindOne.mockResolvedValue({ id: 'tenant-1', sport_key: 'football' });
     await runDraftPublisher(NOW);
-    expect(mockRevalidateSite).toHaveBeenCalledWith('football', ['/my-post']);
+    expect(mockTriggerDeploy).toHaveBeenCalledWith('football');
   });
 
   it('looks up the tenant only once per unique tenant_id in a batch', async () => {
@@ -139,22 +139,22 @@ describe('runDraftPublisher — cache revalidation', () => {
     mockPostFind.mockResolvedValue([p1, p2]);
     await runDraftPublisher(NOW);
     expect(mockBlogTenantFindOne).toHaveBeenCalledTimes(1);
-    expect(mockRevalidateSite).toHaveBeenCalledTimes(2);
+    expect(mockTriggerDeploy).toHaveBeenCalledTimes(2);
   });
 
-  it('skips revalidation when the tenant has no sport_key', async () => {
+  it('skips triggering a rebuild when the tenant has no sport_key', async () => {
     const post = makePost();
     mockPostFind.mockResolvedValue([post]);
     mockBlogTenantFindOne.mockResolvedValue({ id: 'tenant-1', sport_key: '' });
     await runDraftPublisher(NOW);
-    expect(mockRevalidateSite).not.toHaveBeenCalled();
+    expect(mockTriggerDeploy).not.toHaveBeenCalled();
   });
 
-  it('skips revalidation when the tenant is not found', async () => {
+  it('skips triggering a rebuild when the tenant is not found', async () => {
     const post = makePost();
     mockPostFind.mockResolvedValue([post]);
     mockBlogTenantFindOne.mockResolvedValue(null);
     await runDraftPublisher(NOW);
-    expect(mockRevalidateSite).not.toHaveBeenCalled();
+    expect(mockTriggerDeploy).not.toHaveBeenCalled();
   });
 });
